@@ -2,55 +2,137 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 import express from 'express'
+import { createServer } from 'http'
+import { Server } from 'socket.io'
 import cors from 'cors'
 import helmet from 'helmet'
-import authRoutes from './routes/auth.routes'
-import productRoutes from './routes/product.routes'
-import categoryRoutes from './routes/category.routes'
-import uploadRoutes from './routes/upload.routes'
+import rateLimit from 'express-rate-limit'
+import { prisma } from './lib/prisma'
+import { verifyToken } from './utils/jwt'
+import { setIo, sendNotification } from './services/notificationService'
+import authRoutes         from './routes/auth.routes'
+import productRoutes      from './routes/product.routes'
+import categoryRoutes     from './routes/category.routes'
+import uploadRoutes       from './routes/upload.routes'
+import favoriteRoutes     from './routes/favorite.routes'
+import chatRoutes         from './routes/chat.routes'
+import notificationRoutes from './routes/notification.routes'
+import adminRoutes        from './routes/admin.routes'
 
-const app = express()
+const app        = express()
+const httpServer = createServer(app)
+const io         = new Server(httpServer, {
+  cors: { origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true },
+})
+
+// Give the notification service access to io
+setIo(io)
 
 app.use(helmet())
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-}))
+app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }))
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
-// ─── ROUTES ──────────────────────────────────────────────────────────────────
-app.use('/api/auth',     authRoutes)
-app.use('/api/products', productRoutes)
-app.use('/api/categories', categoryRoutes)
-app.use('/api/upload', uploadRoutes)
+// Rate limiting
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { success: false, message: 'Too many attempts, please try again after 15 minutes.' } })
+const apiLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 })
+app.use('/api/auth/login',    authLimiter)
+app.use('/api/auth/register', authLimiter)
+app.use('/api/', apiLimiter)
 
+// ─── REST ROUTES ─────────────────────────────────────────────────────────────
+app.use('/api/auth',          authRoutes)
+app.use('/api/products',      productRoutes)
+app.use('/api/categories',    categoryRoutes)
+app.use('/api/upload',        uploadRoutes)
+app.use('/api/favorites',     favoriteRoutes)
+app.use('/api/chats',         chatRoutes)
+app.use('/api/notifications', notificationRoutes)
+app.use('/api/admin',         adminRoutes)
 
-// ─── HEALTH CHECK ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'TapnBazaar API is running!',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-  })
+  res.json({ success: true, message: 'TapnBazaar API is running!', timestamp: new Date().toISOString() })
 })
 
-// ─── 404 HANDLER ─────────────────────────────────────────────────────────────
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.originalUrl} not found`,
-  })
+  res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` })
 })
 
-const PORT = process.env.PORT || 5000
+// ─── SOCKET.IO ───────────────────────────────────────────────────────────────
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token
+  if (!token) return next(new Error('Authentication required'))
+  try {
+    const decoded      = verifyToken(token)
+    socket.data.userId = decoded.userId
+    next()
+  } catch {
+    next(new Error('Invalid token'))
+  }
+})
 
-app.listen(PORT, () => {
+io.on('connection', (socket) => {
+  const userId = socket.data.userId
+  socket.join(`user:${userId}`)
+
+  socket.on('join_chat',  (chatId: string) => socket.join(`chat:${chatId}`))
+  socket.on('leave_chat', (chatId: string) => socket.leave(`chat:${chatId}`))
+
+  socket.on('send_message', async (data: { chatId: string; content: string }) => {
+    try {
+      const { chatId, content } = data
+      if (!content?.trim()) return
+
+      const participant = await prisma.chatParticipant.findUnique({
+        where: { chatId_userId: { chatId, userId } },
+      })
+      if (!participant) return
+
+      const other = await prisma.chatParticipant.findFirst({
+        where: { chatId, userId: { not: userId } },
+      })
+      if (!other) return
+
+      const message = await prisma.message.create({
+        data: {
+          chatId,
+          content:    content.trim(),
+          senderId:   userId,
+          receiverId: other.userId,
+        },
+        include: { sender: { select: { id: true, name: true, avatar: true } } },
+      })
+
+      io.to(`chat:${chatId}`).emit('new_message', message)
+      io.to(`user:${other.userId}`).emit('unread_update')
+
+      // ── New message notification ──────────────────────────────────────────
+      const chat = await prisma.chat.findUnique({
+        where:   { id: chatId },
+        include: { product: { select: { title: true } } },
+      })
+      await sendNotification({
+        userId: other.userId,
+        type:   'new_message',
+        title:  `New message from ${message.sender.name}`,
+        body:   `"${content.trim().slice(0, 60)}${content.length > 60 ? '…' : ''}"`,
+        link:   `/chats/${chatId}`,
+      })
+    } catch (error) {
+      console.error('send_message error:', error)
+    }
+  })
+
+  socket.on('disconnect', () => {})
+})
+
+// ─── START ───────────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 5000
+httpServer.listen(PORT, () => {
   console.log('')
   console.log('🚀 TapnBazaar API Server Started!')
   console.log(`📡 Running on: http://localhost:${PORT}`)
-  console.log(`🔍 Health check: http://localhost:${PORT}/api/health`)
+  console.log(`💬 Socket.io + 🔔 Notifications ready`)
   console.log('')
 })
 

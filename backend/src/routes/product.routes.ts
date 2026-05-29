@@ -11,6 +11,9 @@ import { protect } from '../middleware/auth.middleware'
 
 const router = Router()
 
+// Protected static routes — must be before /:id
+router.get('/user/my-listings', protect, getMyProducts)
+
 // Public routes
 router.get('/', getProducts)
 router.get('/:id', getProduct)
@@ -19,6 +22,5 @@ router.get('/:id', getProduct)
 router.post('/', protect, createProduct)
 router.put('/:id', protect, updateProduct)
 router.delete('/:id', protect, deleteProduct)
-router.get('/user/my-listings', protect, getMyProducts)
 
 export default router

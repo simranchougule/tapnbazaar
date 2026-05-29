@@ -1,6 +1,7 @@
 import { Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
+import { sendNotification } from '../services/notificationService'
 
 export const createProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -8,6 +9,14 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
 
     if (!title || !description || !price || !categoryId || !city || !state) {
       res.status(400).json({ success: false, message: 'Please provide all required fields' })
+      return
+    }
+    if (title.trim().length < 3) {
+      res.status(400).json({ success: false, message: 'Title must be at least 3 characters' })
+      return
+    }
+    if (parseFloat(price) <= 0) {
+      res.status(400).json({ success: false, message: 'Price must be greater than 0' })
       return
     }
 
@@ -117,12 +126,16 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
       return
     }
 
-    await prisma.product.update({
-      where: { id },
-      data:  { views: { increment: 1 } },
+    await prisma.product.update({ where: { id }, data: { views: { increment: 1 } } })
+
+    const related = await prisma.product.findMany({
+      where: { categoryId: product.categoryId, id: { not: id }, status: 'ACTIVE' },
+      include: { user: { select: { id: true, name: true, city: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 6,
     })
 
-    res.status(200).json({ success: true, product })
+    res.status(200).json({ success: true, product, related })
   } catch (error) {
     console.error('Get product error:', error)
     res.status(500).json({ success: false, message: 'Something went wrong.' })
@@ -163,6 +176,34 @@ export const updateProduct = async (req: AuthRequest, res: Response): Promise<vo
         category: true,
       },
     })
+
+    // ── Notify seller: product marked as sold ─────────────────────────────
+    if (status === 'SOLD' && existing.status !== 'SOLD') {
+      await sendNotification({
+        userId: existing.userId,
+        type:   'product_sold',
+        title:  '🎉 Your item was marked as sold!',
+        body:   `"${existing.title}" has been marked as sold.`,
+        link:   `/products/${id}`,
+      })
+    }
+
+    // ── Notify users who favorited: price dropped ─────────────────────────
+    if (price && parseFloat(price) < existing.price) {
+      const favoriters = await prisma.favorite.findMany({
+        where: { productId: id },
+        select: { userId: true },
+      })
+      await Promise.all(favoriters.map(f =>
+        sendNotification({
+          userId: f.userId,
+          type:   'price_drop',
+          title:  '📉 Price dropped on a saved item!',
+          body:   `"${existing.title}" dropped to Rs.${parseFloat(price).toLocaleString('en-IN')}`,
+          link:   `/products/${id}`,
+        })
+      ))
+    }
 
     res.status(200).json({ success: true, message: 'Product updated!', product })
   } catch (error) {

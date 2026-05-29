@@ -8,20 +8,17 @@ import { prisma } from '../lib/prisma'
 import { generateToken } from '../utils/jwt'
 import { AuthRequest } from '../middleware/auth.middleware'
 
-// ─── REGISTER ────────────────────────────────────────────────────────────────
-// POST /api/auth/register
-// Creates a new user account
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password, phone, city, state } = req.body
-
-    // Step 1 — Check all required fields are provided
     if (!name || !email || !password) {
-      res.status(400).json({
-        success: false,
-        message: 'Please provide name, email and password',
-      })
-      return
+      res.status(400).json({ success: false, message: 'Please provide name, email and password' }); return
+    }
+    if (password.length < 6) {
+      res.status(400).json({ success: false, message: 'Password must be at least 6 characters' }); return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      res.status(400).json({ success: false, message: 'Please provide a valid email address' }); return
     }
 
     // Step 2 — Check if email already exists
@@ -75,6 +72,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         city: user.city,
         state: user.state,
         isVerified: user.isVerified,
+        isAdmin: user.isAdmin,
         createdAt: user.createdAt,
       },
     })
@@ -150,6 +148,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         city: user.city,
         state: user.state,
         isVerified: user.isVerified,
+        isAdmin: user.isAdmin,
         createdAt: user.createdAt,
       },
     })
@@ -216,8 +215,50 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 // The frontend just deletes the token from localStorage
 // This route just confirms the logout
 export const logout = async (req: Request, res: Response): Promise<void> => {
-  res.status(200).json({
-    success: true,
-    message: 'Logged out successfully!',
-  })
+  res.status(200).json({ success: true, message: 'Logged out successfully!' })
+}
+
+export const getPublicProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id as string },
+      select: {
+        id: true, name: true, avatar: true, city: true, state: true, createdAt: true,
+        _count: { select: { products: true } },
+        products: {
+          where: { status: 'ACTIVE' },
+          include: { category: { select: { name: true, slug: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+      },
+    })
+    if (!user) { res.status(404).json({ success: false, message: 'User not found' }); return }
+    res.status(200).json({ success: true, user })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
+
+export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { name, phone, city, state, bio } = req.body
+    const user = await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: {
+        ...(name  && { name }),
+        ...(phone !== undefined && { phone: phone || null }),
+        ...(city  !== undefined && { city:  city  || null }),
+        ...(state !== undefined && { state: state || null }),
+        ...(bio   !== undefined && { bio:   bio   || null }),
+      },
+    })
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated!',
+      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, avatar: user.avatar, city: user.city, state: user.state, isVerified: user.isVerified },
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
 }
