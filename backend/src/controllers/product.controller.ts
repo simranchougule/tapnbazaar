@@ -38,6 +38,7 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
         images: images || [],
         userId: req.user!.userId,
         categoryId,
+        status: 'ACTIVE',
       },
       include: {
         user: { select: { id: true, name: true, avatar: true, phone: true, city: true } },
@@ -251,6 +252,26 @@ export const getMyProducts = async (req: AuthRequest, res: Response): Promise<vo
     res.status(200).json({ success: true, products })
   } catch (error) {
     console.error('Get my products error:', error)
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
+
+// GET /api/products/trending
+export const getTrendingProducts = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const products = await prisma.product.findMany({
+      where: { status: 'ACTIVE' },
+      include: {
+        user:     { select: { id: true, name: true, avatar: true, city: true } },
+        category: { select: { id: true, name: true, slug: true, icon: true } },
+        _count:   { select: { favorites: true } },
+      },
+      orderBy: { views: 'desc' },
+      take: 10,
+    })
+
+    res.status(200).json({ success: true, products })
+  } catch (error) {
     res.status(500).json({ success: false, message: 'Something went wrong.' })
   }
 }

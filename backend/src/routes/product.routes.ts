@@ -6,6 +6,7 @@ import {
   updateProduct,
   deleteProduct,
   getMyProducts,
+  getTrendingProducts,
 } from '../controllers/product.controller'
 import { protect } from '../middleware/auth.middleware'
 
@@ -16,6 +17,7 @@ router.get('/user/my-listings', protect, getMyProducts)
 
 // Public routes
 router.get('/', getProducts)
+router.get('/trending', getTrendingProducts)
 router.get('/:id', getProduct)
 
 // Protected routes

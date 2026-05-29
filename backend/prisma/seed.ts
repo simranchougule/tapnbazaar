@@ -286,7 +286,7 @@ async function main() {
   let created = 0
   for (const p of products) {
     await prisma.product.create({
-      data: { ...p, userId: seller.id, views: Math.floor(Math.random() * 200) },
+      data: { ...p, userId: seller.id, views: Math.floor(Math.random() * 200), status: 'ACTIVE' },
     })
     created++
   }
