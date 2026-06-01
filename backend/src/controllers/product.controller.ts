@@ -255,3 +255,29 @@ export const getMyProducts = async (req: AuthRequest, res: Response): Promise<vo
     res.status(500).json({ success: false, message: 'Something went wrong.' })
   }
 }
+
+export const getTrendingProducts = async (req: any, res: Response): Promise<void> => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10
+
+    const products = await prisma.product.findMany({
+      where: { status: 'ACTIVE' },
+      include: {
+        user:     { select: { id: true, name: true, avatar: true, city: true } },
+        category: { select: { id: true, name: true, slug: true, icon: true } },
+        _count:   { select: { favorites: true } },
+      },
+      orderBy: [
+        { views: 'desc' },
+        { favorites: { _count: 'desc' } },
+        { createdAt: 'desc' },
+      ],
+      take: limit,
+    })
+
+    res.status(200).json({ success: true, products })
+  } catch (error) {
+    console.error('Get trending products error:', error)
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
