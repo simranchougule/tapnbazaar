@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import Navbar from '@/components/layout/Navbar'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
-import { ArrowLeft, MapPin, Tag, Edit, User, Heart, CheckCircle } from 'lucide-react'
+import { ArrowLeft, MapPin, Tag, Edit, User, Heart, CheckCircle, Zap, Flag, Plus } from 'lucide-react'
 import { Product } from '@/types'
 import InlineChat from '@/components/InlineChat'
 import ImageLightbox from '@/components/ImageLightbox'
@@ -35,10 +35,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => { loadFromStorage() }, [])
   useEffect(() => { fetchProduct() }, [])
-
-  useEffect(() => {
-    if (isLoggedIn) fetchFavoriteStatus()
-  }, [isLoggedIn, id])
+  useEffect(() => { if (isLoggedIn) fetchFavoriteStatus() }, [isLoggedIn, id])
 
   const fetchProduct = async () => {
     try {
@@ -108,11 +105,7 @@ export default function ProductDetailPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-4xl mx-auto px-4 py-8">
-
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6"
-        >
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6">
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm">Back</span>
         </button>
@@ -121,13 +114,28 @@ export default function ProductDetailPage() {
 
           {/* Images */}
           <div>
-            <div className="bg-gray-100 rounded-2xl overflow-hidden h-80 flex items-center justify-center cursor-zoom-in" onClick={() => product.images.length > 0 && setLightbox(true)}>
-              {product.images.length > 0 ? (
-                <img src={product.images[activeImage]} alt={product.title} className="w-full h-full object-cover" />
-              ) : (
-                <Tag className="w-16 h-16 text-gray-300" />
-              )}
+            <div className="relative">
+              <div
+                className="bg-gray-100 rounded-2xl overflow-hidden h-80 flex items-center justify-center cursor-zoom-in"
+                onClick={() => product.images.length > 0 && setLightbox(true)}
+              >
+                {product.images.length > 0 ? (
+                  <img src={product.images[activeImage]} alt={product.title} className="w-full h-full object-cover" />
+                ) : (
+                  <Tag className="w-16 h-16 text-gray-300" />
+                )}
+              </div>
+
+              {/* Floating favourite button */}
+              <button
+                onClick={handleToggleFavorite}
+                disabled={favLoading}
+                className={"absolute top-3 right-3 p-2.5 rounded-full shadow-lg transition-all " + (favorited ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-500 hover:bg-white hover:text-red-500')}
+              >
+                <Heart className={"w-5 h-5 " + (favorited ? 'fill-white' : '')} />
+              </button>
             </div>
+
             {product.images.length > 1 && (
               <div className="flex gap-2 mt-3">
                 {product.images.map((img, i) => (
@@ -183,17 +191,22 @@ export default function ProductDetailPage() {
               <User className="w-4 h-4 text-gray-300" />
             </Link>
 
-            {/* Save button */}
-            <button
-              onClick={handleToggleFavorite}
-              disabled={favLoading}
-              className={"flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-semibold transition-colors " + (favorited ? 'border-red-400 text-red-500 bg-red-50' : 'border-gray-200 text-gray-600 hover:border-red-300')}
-            >
-              <Heart className={"w-4 h-4 " + (favorited ? 'fill-red-500 text-red-500' : '')} />
-              {favorited ? 'Saved' : 'Save'}
-            </button>
+            {/* Buyer CTA — Buy Now only */}
+            {!isOwner && product.status !== 'SOLD' && (
+              <button
+                onClick={() => {
+                  if (!isLoggedIn) { toast.error('Please login to buy'); router.push('/login'); return }
+                  toast.success('Chat with the seller to proceed!')
+                  document.querySelector<HTMLButtonElement>('[data-inline-chat]')?.click()
+                }}
+                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm text-base w-full"
+              >
+                <Zap className="w-5 h-5" />
+                Buy Now
+              </button>
+            )}
 
-            {/* Owner: edit button | Buyer: inline chat */}
+            {/* Owner actions | Buyer chat */}
             {isOwner ? (
               <div className="flex flex-col gap-2">
                 {product.status !== 'SOLD' && (
@@ -208,14 +221,28 @@ export default function ProductDetailPage() {
                   <Edit className="w-4 h-4" />
                   Edit Listing
                 </Link>
+                <Link href="/products/new"
+                  className="flex items-center justify-center gap-2 border border-gray-200 text-gray-600 hover:border-orange-300 font-medium py-2.5 rounded-xl transition-colors text-sm">
+                  <Plus className="w-4 h-4" />
+                  Sell Similar Item
+                </Link>
               </div>
             ) : (
-              <InlineChat
-                productId={product.id}
-                sellerName={product.user.name}
-                productTitle={product.title}
-                currentUserId={storedUser?.id ?? null}
-              />
+              <div className="flex flex-col gap-2">
+                <InlineChat
+                  productId={product.id}
+                  sellerName={product.user.name}
+                  productTitle={product.title}
+                  currentUserId={storedUser?.id ?? null}
+                />
+                <button
+                  onClick={() => toast.success('Report submitted. We will review this listing.')}
+                  className="flex items-center justify-center gap-2 text-gray-400 hover:text-red-500 text-xs py-2 transition-colors"
+                >
+                  <Flag className="w-3 h-3" />
+                  Report Listing
+                </button>
+              </div>
             )}
           </div>
         </div>

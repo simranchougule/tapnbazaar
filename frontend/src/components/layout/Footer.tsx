@@ -9,14 +9,15 @@ export default function Footer() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
 
           <div className="col-span-2 sm:col-span-1">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="bg-orange-500 text-white font-bold text-xl px-3 py-1 rounded-lg">
-                TB
-              </div>
-              <span className="font-bold text-xl text-slate-900">TapnBazaar</span>
-            </div>
+            <Link href="/" className="inline-block mb-3">
+              <img
+                src="/tapnbazaar-logo.png"
+                alt="TapnBazaar"
+                className="h-32 w-56 object-contain"
+              />
+            </Link>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Buy and sell second-hand items locally across India. Safe, simple and free.
+              Buy New, Sell Used. All in One Place — Safe, simple and free across India.
             </p>
           </div>
 

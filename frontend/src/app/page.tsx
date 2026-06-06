@@ -4,11 +4,17 @@ import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
-import { Search, MapPin, Tag, Heart, SlidersHorizontal, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
+import { Search, MapPin, Tag, Heart, SlidersHorizontal, ChevronLeft, ChevronRight, Flame, ChevronDown, ShoppingBag, Plus } from 'lucide-react'
 import TrendingProducts from '@/components/trending/TrendingProducts'
 import api from '@/lib/api'
 import { Product } from '@/types'
 import { useAuthStore } from '@/store/authStore'
+
+const CITIES = [
+  'All India', 'Mumbai', 'Delhi', 'Bangalore',
+  'Pune', 'Hyderabad', 'Chennai', 'Kolkata',
+  'Ahmedabad', 'Jaipur', 'Surat', 'Lucknow',
+]
 
 const CATEGORIES = [
   { name: 'Electronics', icon: '📱', slug: 'electronics' },
@@ -24,10 +30,10 @@ const CATEGORIES = [
 ]
 
 const SORT_OPTIONS = [
-  { label: 'Newest',        value: 'createdAt_desc' },
-  { label: 'Oldest',        value: 'createdAt_asc' },
-  { label: 'Price: Low',    value: 'price_asc' },
-  { label: 'Price: High',   value: 'price_desc' },
+  { label: 'Newest',      value: 'createdAt_desc' },
+  { label: 'Oldest',      value: 'createdAt_asc' },
+  { label: 'Price: Low',  value: 'price_asc' },
+  { label: 'Price: High', value: 'price_desc' },
 ]
 
 function HomeContent() {
@@ -35,36 +41,44 @@ function HomeContent() {
   const searchParams = useSearchParams()
   const { isLoggedIn } = useAuthStore()
 
-  const [products, setProducts]   = useState<Product[]>([])
-  const [search, setSearch]       = useState('')
-  const [loading, setLoading]     = useState(true)
+  const [products, setProducts]     = useState<Product[]>([])
+  const [search, setSearch]         = useState('')
+  const [loading, setLoading]       = useState(true)
   const [activeCategory, setActiveCategory] = useState('')
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
-  const [showFilters, setShowFilters] = useState(false)
+  const [favorites, setFavorites]   = useState<Set<string>>(new Set())
+  const [showFilters, setShowFilters]   = useState(false)
   const [showTrending, setShowTrending] = useState(false)
-
-  // Filter/sort state
-  const [sortBy, setSortBy]       = useState('createdAt_desc')
-  const [minPrice, setMinPrice]   = useState('')
-  const [maxPrice, setMaxPrice]   = useState('')
-
-  // Pagination
-  const [page, setPage]           = useState(1)
+  const [showCities, setShowCities]     = useState(false)
+  const [selectedCity, setSelectedCity] = useState('All India')
+  const [sortBy, setSortBy]     = useState('createdAt_desc')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+  const [page, setPage]             = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [total, setTotal]         = useState(0)
+  const [total, setTotal]           = useState(0)
 
   useEffect(() => {
     const category = searchParams.get('category') || ''
     const q        = searchParams.get('search')   || ''
+    const city     = searchParams.get('city')     || ''
     setActiveCategory(category)
     setSearch(q)
+    if (city) setSelectedCity(city)
     setPage(1)
-    fetchProducts(category, q, 1, sortBy, minPrice, maxPrice)
+    fetchProducts(category, q, 1, sortBy, minPrice, maxPrice, city)
   }, [searchParams])
 
   useEffect(() => {
     if (isLoggedIn) fetchFavorites()
   }, [isLoggedIn])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('.city-dropdown')) setShowCities(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const fetchFavorites = async () => {
     try {
@@ -74,8 +88,8 @@ function HomeContent() {
   }
 
   const fetchProducts = async (
-    category = activeCategory, q = search,
-    p = page, sort = sortBy, min = minPrice, max = maxPrice
+    category = activeCategory, q = search, p = page,
+    sort = sortBy, min = minPrice, max = maxPrice, city = selectedCity
   ) => {
     try {
       setLoading(true)
@@ -85,6 +99,7 @@ function HomeContent() {
       if (q)        url += '&search='   + encodeURIComponent(q)
       if (min)      url += '&minPrice=' + min
       if (max)      url += '&maxPrice=' + max
+      if (city && city !== 'All India') url += '&city=' + encodeURIComponent(city)
       const res = await api.get(url)
       setProducts(res.data.products)
       setTotalPages(res.data.pagination.totalPages)
@@ -93,9 +108,21 @@ function HomeContent() {
     finally { setLoading(false) }
   }
 
+  const handleCitySelect = (city: string) => {
+    setSelectedCity(city)
+    setShowCities(false)
+    const params = new URLSearchParams()
+    if (search.trim()) params.set('search', search.trim())
+    if (city !== 'All India') params.set('city', city)
+    router.push(params.toString() ? '/?' + params.toString() : '/')
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    router.push(search.trim() ? '/?search=' + encodeURIComponent(search.trim()) : '/')
+    const params = new URLSearchParams()
+    if (search.trim()) params.set('search', search.trim())
+    if (selectedCity !== 'All India') params.set('city', selectedCity)
+    router.push(params.toString() ? '/?' + params.toString() : '/')
   }
 
   const handleCategoryClick = (slug: string) => {
@@ -117,7 +144,7 @@ function HomeContent() {
 
   const applyFilters = () => {
     setPage(1)
-    fetchProducts(activeCategory, search, 1, sortBy, minPrice, maxPrice)
+    fetchProducts(activeCategory, search, 1, sortBy, minPrice, maxPrice, selectedCity)
     setShowFilters(false)
   }
 
@@ -126,13 +153,13 @@ function HomeContent() {
     setMinPrice('')
     setMaxPrice('')
     setPage(1)
-    fetchProducts(activeCategory, search, 1, 'createdAt_desc', '', '')
+    fetchProducts(activeCategory, search, 1, 'createdAt_desc', '', '', selectedCity)
     setShowFilters(false)
   }
 
   const goToPage = (p: number) => {
     setPage(p)
-    fetchProducts(activeCategory, search, p, sortBy, minPrice, maxPrice)
+    fetchProducts(activeCategory, search, p, sortBy, minPrice, maxPrice, selectedCity)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -144,22 +171,75 @@ function HomeContent() {
       <div className="bg-gradient-to-br from-orange-500 via-orange-500 to-orange-600 px-4 py-16 sm:py-20">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">Buy and Sell Locally</h1>
-          <p className="text-orange-100 text-lg mb-8 leading-relaxed">Find great deals on second-hand items near you</p>
+          <p className="text-orange-100 text-lg mb-8 leading-relaxed font-medium">Buy New, Sell Used. All in One Place</p>
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-300 w-5 h-5" />
+            <div className="flex w-full rounded-2xl border border-white/30 bg-white shadow-lg focus-within:ring-2 focus-within:ring-white/50 transition-all" style={{overflow: 'visible'}}>
+
+              {/* City Dropdown */}
+              <div className="relative city-dropdown flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowCities(!showCities) }}
+                  className="flex items-center gap-1.5 px-4 py-3.5 border-r border-gray-200 rounded-l-2xl bg-white hover:bg-slate-50 transition-colors min-w-fit h-full"
+                >
+                  <MapPin className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  <span className="text-sm text-gray-700 font-medium max-w-24 truncate">{selectedCity}</span>
+                  <ChevronDown className={"w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 " + (showCities ? 'rotate-180' : '')} />
+                </button>
+                {showCities && (
+                  <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 z-[200] w-48 py-1 max-h-64 overflow-y-auto">
+                    <p className="text-xs text-gray-400 px-3 py-2 font-semibold uppercase tracking-wider border-b border-gray-50">Select City</p>
+                    {CITIES.map((city) => (
+                      <button
+                        key={city}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleCitySelect(city) }}
+                        className={"w-full text-left px-3 py-2.5 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2 " + (selectedCity === city ? 'text-orange-500 font-semibold bg-orange-50' : 'text-gray-600')}
+                      >
+                        <span>{city === 'All India' ? '🌍' : '📍'}</span>
+                        <span>{city}</span>
+                        {selectedCity === city && <span className="ml-auto text-orange-500">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Search Input */}
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search phones, cars, furniture..."
-                className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-slate-900 border border-white/50 bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                className="flex-1 px-4 py-3.5 text-slate-900 text-sm focus:outline-none bg-white rounded-none"
               />
+
+              {/* Search Button */}
+              <button
+                type="submit"
+                className="px-6 bg-white hover:bg-slate-50 text-orange-500 font-semibold transition-colors flex items-center gap-2 flex-shrink-0 rounded-r-2xl border-l border-gray-200"
+              >
+                <Search className="w-4 h-4" />
+                <span className="hidden sm:block text-gray-700">Search</span>
+              </button>
             </div>
-            <button type="submit" className="inline-flex justify-center items-center bg-white text-orange-600 font-semibold px-8 py-3.5 rounded-2xl shadow-lg hover:bg-slate-50 transition-colors">
-              Search
-            </button>
           </form>
+
+          {/* Quick Actions */}
+          <div className="flex items-center justify-center gap-3 mt-5">
+            <button
+              type="button"
+              onClick={() => document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors border border-white/30"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Browse Products
+            </button>
+            <Link href="/products/new" className="flex items-center gap-2 bg-white text-orange-600 hover:bg-orange-50 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-md">
+              <Plus className="w-4 h-4" />
+              Start Selling
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -179,7 +259,8 @@ function HomeContent() {
           {activeCategory && (
             <div className="mt-6 inline-flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-xl border border-orange-200">
               <span className="text-sm font-medium text-orange-900">
-                {CATEGORIES.find(c => c.slug === activeCategory)?.icon} {CATEGORIES.find(c => c.slug === activeCategory)?.name}
+                {CATEGORIES.find(c => c.slug === activeCategory)?.icon}{' '}
+                {CATEGORIES.find(c => c.slug === activeCategory)?.name}
               </span>
               <button onClick={() => router.push('/')} className="text-xs font-medium text-orange-600 hover:text-orange-700 ml-1">×</button>
             </div>
@@ -188,12 +269,12 @@ function HomeContent() {
       </div>
 
       {/* Listings */}
-      <div className="max-w-7xl mx-auto px-4 py-8 pb-10">
+      <div id="listings-section" className="max-w-7xl mx-auto px-4 py-8 pb-10">
 
         {/* Header row with sort/filter */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-slate-900">
-            {activeCategory ? CATEGORIES.find(c => c.slug === activeCategory)?.name + ' Listings' : 'Fresh Recommendations'}
+            {activeCategory ? CATEGORIES.find(c => c.slug === activeCategory)?.name + ' Listings' : 'Discover Products'}
             {!loading && <span className="text-sm text-gray-400 font-normal ml-2">({total})</span>}
           </h2>
           <div className="flex items-center gap-2">
@@ -204,9 +285,9 @@ function HomeContent() {
               <span className={"text-xs px-1.5 py-0.5 rounded-full " + (showTrending ? 'bg-orange-400 text-white' : 'bg-orange-100 text-orange-600')}>Live</span>
             </button>
             <button onClick={() => setShowFilters(f => !f)}
-            className={"flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-colors " + (showFilters ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300')}>
-            <SlidersHorizontal className="w-4 h-4" />
-            Filter & Sort
+              className={"flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-colors " + (showFilters ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300')}>
+              <SlidersHorizontal className="w-4 h-4" />
+              Filter & Sort
             </button>
           </div>
         </div>
@@ -262,10 +343,19 @@ function HomeContent() {
         ) : products.length === 0 ? (
           <div className="text-center py-20">
             <div className="mx-auto mb-4 max-w-md rounded-3xl border border-dashed border-slate-200 bg-white p-8 shadow-sm">
-              <p className="text-slate-500 text-lg">No listings found</p>
-              <Link href="/products/new" className="mt-4 inline-flex bg-orange-500 text-white px-6 py-3 rounded-2xl font-medium hover:bg-orange-600 transition-colors">
-                Post the first listing!
-              </Link>
+              <ShoppingBag className="w-12 h-12 text-orange-300 mx-auto mb-3" />
+              <p className="text-slate-700 text-lg font-semibold mb-1">No listings found</p>
+              <p className="text-slate-400 text-sm mb-5">Buy great products or start selling your own items.</p>
+              <div className="flex gap-3 justify-center">
+                <Link href="/" className="inline-flex items-center gap-2 border border-orange-500 text-orange-500 px-5 py-2.5 rounded-xl font-medium hover:bg-orange-50 transition-colors text-sm">
+                  <ShoppingBag className="w-4 h-4" />
+                  Browse All
+                </Link>
+                <Link href="/products/new" className="inline-flex items-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-orange-600 transition-colors text-sm">
+                  <Plus className="w-4 h-4" />
+                  Sell an Item
+                </Link>
+              </div>
             </div>
           </div>
         ) : (
@@ -288,9 +378,12 @@ function HomeContent() {
                   <div className="p-4">
                     <p className="font-semibold text-slate-900 text-lg">Rs.{product.price.toLocaleString('en-IN')}</p>
                     <p className="text-slate-600 text-sm truncate mt-2">{product.title}</p>
-                    <div className="flex items-center gap-1 mt-3 text-xs text-slate-400">
-                      <MapPin className="w-3 h-3" />
-                      <span>{product.city}</span>
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="flex items-center gap-1 text-xs text-slate-400">
+                        <MapPin className="w-3 h-3" />
+                        <span>{product.city}</span>
+                      </div>
+                      <span className="text-xs text-orange-500 font-medium">Buy Now →</span>
                     </div>
                   </div>
                 </Link>

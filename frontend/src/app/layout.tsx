@@ -4,12 +4,14 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import Footer from '@/components/layout/Footer'
 import BottomNav from '@/components/layout/BottomNav'
+import TrustSection from '@/components/TrustSection'
+
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'TapnBazaar - Buy & Sell Locally',
-  description: 'Find great deals on second-hand items in your city',
+  title: 'TapnBazaar - Buy New, Sell Used. All in One Place',
+  description: 'Buy New, Sell Used. All in One Place — TapnBazaar',
 }
 
 export default function RootLayout({
@@ -34,6 +36,7 @@ export default function RootLayout({
           <main className="flex-1 pb-16 sm:pb-0">
             {children}
           </main>
+          <TrustSection />
           <Footer />
           <BottomNav />
         </div>
