@@ -35,12 +35,8 @@ export const uploadSingleImage = async (
       publicId: result.public_id,
     })
 } catch (error: any) {
-    console.error('Upload error details:', JSON.stringify(error, null, 2))
-    res.status(500).json({
-      success: false,
-      message: error?.message || 'Image upload failed',
-      details: error
-    })
+    console.error("Upload error:", error)
+    res.status(500).json({ success: false, message: "Image upload failed. Please try again." })
   }
 }
 
@@ -80,11 +76,7 @@ export const uploadMultipleImages = async (
       message: `${urls.length} images uploaded successfully`,
     })
 } catch (error: any) {
-    console.error('Upload error details:', JSON.stringify(error, null, 2))
-    res.status(500).json({
-      success: false,
-      message: error?.message || 'Image upload failed',
-      details: error
-    })
+    console.error("Upload error:", error)
+    res.status(500).json({ success: false, message: "Image upload failed. Please try again." })
   }
 }
