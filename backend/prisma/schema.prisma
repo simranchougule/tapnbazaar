@@ -167,3 +167,20 @@ enum ProductStatus {
   SOLD
   INACTIVE
 }
+model Report {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String
+  reason    String
+  details   String?
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@index([status])
+  @@map("reports")
+}
