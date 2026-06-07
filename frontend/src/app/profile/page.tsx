@@ -242,7 +242,7 @@ export default function ProfilePage() {
                     <Link href={'/products/' + product.id}>
                       <div className="bg-slate-100 h-40 w-full flex items-center justify-center relative">
                         {product.images.length > 0 ? (
-                          <Image src={product.images[0]} alt={product.title} fill className="object-cover" unoptimized />
+                          <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
                         ) : (
                           <Package className="w-10 h-10 text-gray-300" />
                         )}

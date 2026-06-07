@@ -195,7 +195,7 @@ export default function EditProductPage() {
                 <div className="grid grid-cols-5 gap-2 mb-3">
                   {images.map((url, index) => (
                     <div key={index} className="relative aspect-square">
-                      <Image src={url} alt="" fill className="object-cover rounded-xl border border-gray-200" unoptimized />
+                      <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-gray-200" loading="lazy" />
                       <button
                         type="button"
                         onClick={() => removeImage(index)}

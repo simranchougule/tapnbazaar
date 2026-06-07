@@ -131,9 +131,10 @@ export const getUnreadCount = async (req: AuthRequest, res: Response): Promise<v
   }
 }
 
+
 export const getSingleChat = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { chatId } = req.params
+    const chatId = req.params.chatId as string
     const userId = req.user!.userId
 
     const chat = await prisma.chat.findUnique({
@@ -150,10 +151,10 @@ export const getSingleChat = async (req: AuthRequest, res: Response): Promise<vo
 
     if (!chat) { res.status(404).json({ success: false, message: 'Chat not found' }); return }
 
-    const isParticipant = chat.participants.some(p => p.user.id === userId)
+    const isParticipant = chat.participants.some((p: any) => p.user.id === userId)
     if (!isParticipant) { res.status(403).json({ success: false, message: 'Access denied' }); return }
 
-    res.json({ success: true, chat, messages: chat.messages })
+    res.json({ success: true, chat, messages: (chat as any).messages })
   } catch (error) {
     res.status(500).json({ success: false, message: 'Something went wrong.' })
   }

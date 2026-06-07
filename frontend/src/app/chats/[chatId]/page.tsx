@@ -143,7 +143,7 @@ export default function ChatRoomPage() {
         {chat?.product.images[0] && (
           <Link href={'/products/' + chat.product.id}>
             <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
-              <Image src={chat.product.images[0]} alt="" fill className="object-cover" unoptimized />
+              <img src={chat.product.images[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
             </div>
           </Link>
         )}
