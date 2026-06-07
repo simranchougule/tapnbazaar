@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -57,7 +58,7 @@ export default function Navbar() {
 
             {/* Logo */}
             <Link href="/" className="flex-shrink-0">
-              <img src="/tapnbazaar-logo.png" alt="TapnBazaar" className="h-16 w-40 object-contain" />
+              <Image src="/tapnbazaar-logo.png" alt="TapnBazaar" width={160} height={64} className="object-contain" />
             </Link>
 
             {/* Right Actions */}

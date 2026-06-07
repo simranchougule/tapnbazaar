@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
@@ -198,7 +199,7 @@ export default function ProductDetailPage() {
                 onClick={() => product.images.length > 0 && setLightbox(true)}
               >
                 {product.images.length > 0 ? (
-                  <img loading="lazy" src={product.images[activeImage]} alt={product.title} className="w-full h-full object-cover" />
+                  <Image src={product.images[activeImage]} alt={product.title} fill className="object-cover" unoptimized />
                 ) : (
                   <Tag className="w-16 h-16 text-gray-300" />
                 )}
@@ -230,7 +231,7 @@ export default function ProductDetailPage() {
                     onClick={() => setActiveImage(i)}
                     className={"w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors " + (activeImage === i ? 'border-orange-500' : 'border-transparent')}
                   >
-                    <img loading="lazy" src={img} alt="" className="w-full h-full object-cover" />
+                    <Image src={img} alt="" fill className="object-cover" unoptimized />
                   </button>
                 ))}
               </div>
@@ -401,7 +402,7 @@ export default function ProductDetailPage() {
               <Link key={r.id} href={'/products/' + r.id} className="bg-white rounded-xl overflow-hidden hover:shadow-md transition-shadow">
                 <div className="bg-gray-100 h-32 w-full flex items-center justify-center">
                   {r.images.length > 0 ? (
-                    <img loading="lazy" src={r.images[0]} alt={r.title} className="w-full h-full object-cover" />
+                    <Image src={r.images[0]} alt={r.title} fill className="object-cover" unoptimized />
                   ) : (
                     <Tag className="w-8 h-8 text-gray-300" />
                   )}

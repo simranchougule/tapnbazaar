@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
@@ -97,7 +98,7 @@ export default function SellerProfilePage() {
                 className="bg-white rounded-xl overflow-hidden hover:shadow-md transition-shadow">
                 <div className="bg-gray-100 h-44 w-full flex items-center justify-center">
                   {product.images.length > 0 ? (
-                    <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
+                    <Image src={product.images[0]} alt={product.title} fill className="object-cover" unoptimized />
                   ) : (
                     <Tag className="w-10 h-10 text-gray-300" />
                   )}

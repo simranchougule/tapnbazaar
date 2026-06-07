@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -71,7 +72,7 @@ export default function ChatsPage() {
                   {/* Product thumbnail */}
                   <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                     {chat.product.images.length > 0 ? (
-                      <img src={chat.product.images[0]} alt="" className="w-full h-full object-cover" />
+                      <Image src={chat.product.images[0]} alt="" fill className="object-cover" unoptimized />
                     ) : (
                       <Tag className="w-5 h-5 text-gray-300" />
                     )}

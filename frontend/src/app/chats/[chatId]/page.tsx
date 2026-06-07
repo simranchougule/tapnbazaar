@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
@@ -146,7 +147,7 @@ export default function ChatRoomPage() {
         {chat?.product.images[0] && (
           <Link href={'/products/' + chat.product.id}>
             <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
-              <img src={chat.product.images[0]} alt="" className="w-full h-full object-cover" />
+              <Image src={chat.product.images[0]} alt="" fill className="object-cover" unoptimized />
             </div>
           </Link>
         )}

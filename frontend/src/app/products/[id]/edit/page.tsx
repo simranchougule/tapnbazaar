@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
@@ -194,7 +195,7 @@ export default function EditProductPage() {
                 <div className="grid grid-cols-5 gap-2 mb-3">
                   {images.map((url, index) => (
                     <div key={index} className="relative aspect-square">
-                      <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-gray-200" />
+                      <Image src={url} alt="" fill className="object-cover rounded-xl border border-gray-200" unoptimized />
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
