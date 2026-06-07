@@ -31,7 +31,7 @@ export const markAllRead = async (req: AuthRequest, res: Response): Promise<void
 export const markOneRead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     await prisma.notification.update({
-      where: { id: req.params.id as string },
+      where: { id: req.params.id as string, userId: req.user!.userId },
       data:  { isRead: true },
     })
     res.status(200).json({ success: true })
