@@ -370,7 +370,7 @@ function HomeContent() {
                   </button>
                   <div className="bg-slate-100 h-48 w-full flex items-center justify-center overflow-hidden">
                     {product.images.length > 0 ? (
-                      <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
+                      <img loading="lazy" src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
                     ) : (
                       <Tag className="w-12 h-12 text-slate-300" />
                     )}

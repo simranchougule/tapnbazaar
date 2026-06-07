@@ -57,7 +57,7 @@ export default function Navbar() {
 
             {/* Logo */}
             <Link href="/" className="flex-shrink-0">
-              <img src="/tapnbazaar-logo.png" alt="TapnBazaar" className="h-32 w-56 object-contain" />
+              <img src="/tapnbazaar-logo.png" alt="TapnBazaar" className="h-16 w-40 object-contain" />
             </Link>
 
             {/* Right Actions */}
