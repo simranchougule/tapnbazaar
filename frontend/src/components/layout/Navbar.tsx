@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
-import { Plus, User, LogOut, Heart, MessageCircle, ShieldCheck, Menu, X, ShoppingBag } from 'lucide-react'
+import { Plus, User, LogOut, Heart, MessageCircle, ShieldCheck, Menu, X, ShoppingBag, Bell } from 'lucide-react'
 import api from '@/lib/api'
 
 const CATEGORIES = [
@@ -27,6 +27,7 @@ export default function Navbar() {
   const { user, isLoggedIn, logout, loadFromStorage } = useAuthStore()
 
   const [unread, setUnread]         = useState(0)
+  const [notifCount, setNotifCount] = useState(0)
   const [mobileMenu, setMobileMenu] = useState(false)
   const [scrolled, setScrolled]     = useState(false)
 
@@ -41,6 +42,7 @@ export default function Navbar() {
   useEffect(() => {
     if (!isLoggedIn) return
     api.get('/chats/unread').then(res => setUnread(res.data.count)).catch(() => {})
+    api.get('/notifications').then(res => setNotifCount(res.data.unreadCount)).catch(() => {})
   }, [isLoggedIn])
 
   const handleLogout = () => {
@@ -102,6 +104,15 @@ export default function Navbar() {
 
                   <Link href="/favorites" className="hidden sm:flex p-2.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                     <Heart className="w-5 h-5" />
+                  </Link>
+
+                  <Link href="/notifications" className="relative hidden sm:flex p-2.5 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-colors">
+                    <Bell className="w-5 h-5" />
+                    {notifCount > 0 && (
+                      <span className="absolute top-1 right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                        {notifCount > 9 ? '9+' : notifCount}
+                      </span>
+                    )}
                   </Link>
 
                   <Link href="/profile" className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded-xl transition-colors">
