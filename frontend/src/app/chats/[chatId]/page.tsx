@@ -50,13 +50,9 @@ export default function ChatRoomPage() {
 
   const fetchChat = async () => {
     try {
-      const res = await api.get('/chats/' + chatId + '/messages')
+      const res = await api.get('/chats/' + chatId)
+      setChat(res.data.chat)
       setMessages(res.data.messages)
-
-      // Also get chat metadata from the chats list
-      const chatsRes = await api.get('/chats')
-      const found    = chatsRes.data.chats.find((c: ChatData) => c.id === chatId)
-      if (found) setChat(found)
     } catch {
       toast.error('Chat not found')
       router.push('/chats')

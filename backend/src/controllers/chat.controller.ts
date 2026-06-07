@@ -130,3 +130,31 @@ export const getUnreadCount = async (req: AuthRequest, res: Response): Promise<v
     res.status(500).json({ success: false, message: 'Something went wrong.' })
   }
 }
+
+export const getSingleChat = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { chatId } = req.params
+    const userId = req.user!.userId
+
+    const chat = await prisma.chat.findUnique({
+      where: { id: chatId },
+      include: {
+        product:      { select: { id: true, title: true, price: true, images: true } },
+        participants: { include: { user: { select: { id: true, name: true, avatar: true } } } },
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          include: { sender: { select: { id: true, name: true, avatar: true } } },
+        },
+      },
+    })
+
+    if (!chat) { res.status(404).json({ success: false, message: 'Chat not found' }); return }
+
+    const isParticipant = chat.participants.some(p => p.user.id === userId)
+    if (!isParticipant) { res.status(403).json({ success: false, message: 'Access denied' }); return }
+
+    res.json({ success: true, chat, messages: chat.messages })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
