@@ -98,7 +98,7 @@ export default function SellerProfilePage() {
                 className="bg-white rounded-xl overflow-hidden hover:shadow-md transition-shadow">
                 <div className="bg-gray-100 h-44 w-full flex items-center justify-center">
                   {product.images.length > 0 ? (
-                    <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
+                    <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" onError={(e: any) => { e.target.src = '/placeholder.png' }} />
                   ) : (
                     <Tag className="w-10 h-10 text-gray-300" />
                   )}
