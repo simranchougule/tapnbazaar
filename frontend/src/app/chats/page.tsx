@@ -67,8 +67,9 @@ export default function ChatsPage() {
             {chats.map(chat => {
               const other      = getOtherUser(chat)
               const lastMsg    = chat.messages[0]
+              const isUnread = lastMsg && lastMsg.sender.id !== user?.id && !lastMsg.isRead
               return (
-                <Link key={chat.id} href={'/chats/' + chat.id} className="bg-white rounded-2xl p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
+                <Link key={chat.id} href={'/chats/' + chat.id} className={`bg-white rounded-2xl p-4 flex items-center gap-3 hover:shadow-md transition-shadow ${isUnread ? 'border-l-4 border-orange-500' : ''}`}>
                   {/* Product thumbnail */}
                   <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                     {chat.product.images.length > 0 ? (
@@ -80,16 +81,17 @@ export default function ChatsPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="font-semibold text-gray-800 text-sm truncate">{other?.name}</p>
+                      <p className={`font-semibold text-sm truncate ${isUnread ? 'text-gray-900 font-bold' : 'text-gray-800'}`}>{other?.name}</p>
                       {lastMsg && (
                         <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
                           {new Date(lastMsg.createdAt).toLocaleDateString()}
                         </span>
+                      {isUnread && <span className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0 ml-1"></span>}
                       )}
                     </div>
                     <p className="text-xs text-orange-500 truncate">{chat.product.title}</p>
                     {lastMsg && (
-                      <p className="text-xs text-gray-400 truncate mt-0.5">
+                      <p className={`text-xs truncate mt-0.5 ${isUnread ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
                         {lastMsg.sender.id === user?.id ? 'You: ' : ''}{lastMsg.content}
                       </p>
                     )}
