@@ -178,21 +178,29 @@ export default function ChatRoomPage() {
 
       {/* Input */}
       <div className="bg-white border-t border-gray-200 px-4 py-3 sticky bottom-0">
-        <form onSubmit={handleSend} className="max-w-2xl mx-auto flex gap-2">
-          <input
-            type="text"
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500"
-          />
-          <button
-            type="submit"
-            disabled={!text.trim() || sending}
-            className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white p-2.5 rounded-xl transition-colors"
-          >
-            <Send className="w-4 h-4" />
-          </button>
+        <form onSubmit={handleSend} className="max-w-2xl mx-auto flex flex-col gap-1">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={text}
+              onChange={e => setText(e.target.value.slice(0, 500))}
+              placeholder="Type a message..."
+              maxLength={500}
+              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500"
+            />
+            <button
+              type="submit"
+              disabled={!text.trim() || sending || text.length > 500}
+              className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white p-2.5 rounded-xl transition-colors"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+          {text.length > 0 && (
+            <p className={`text-xs text-right pr-1 ${text.length >= 450 ? 'text-red-400' : 'text-gray-400'}`}>
+              {text.length}/500
+            </p>
+          )}
         </form>
       </div>
     </div>
