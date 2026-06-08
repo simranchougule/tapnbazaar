@@ -48,7 +48,7 @@ export default function BottomNav() {
       <div className="flex items-center justify-around px-2 py-2">
         {navItems.map((item) => {
           const Icon      = item.icon
-          const isActive  = pathname === item.href
+          const isActive  = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
 
           if (item.special) {
             return (
