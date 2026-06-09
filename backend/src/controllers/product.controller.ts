@@ -21,7 +21,6 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     const category = await prisma.category.findUnique({ where: { id: categoryId } })
-
     if (!category) {
       res.status(400).json({ success: false, message: 'Invalid category' })
       return
@@ -41,7 +40,7 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
         status: 'ACTIVE',
       },
       include: {
-        user: { select: { id: true, name: true, avatar: true, phone: true, city: true } },
+        user:     { select: { id: true, name: true, avatar: true, phone: true, city: true } },
         category: true,
       },
     })
@@ -75,7 +74,24 @@ export const getProducts = async (req: AuthRequest, res: Response): Promise<void
       ]
     }
 
-    if (category)  where.category  = { slug: category }
+    // Fix: support both parent and subcategory slugs
+    if (category) {
+      const cat = await prisma.category.findUnique({
+        where:   { slug: category },
+        include: { children: { select: { id: true } } }
+      })
+      if (cat) {
+        if (cat.children && cat.children.length > 0) {
+          // Parent category — include products from all subcategories too
+          const childIds = cat.children.map((c: any) => c.id)
+          where.categoryId = { in: [cat.id, ...childIds] }
+        } else {
+          // Subcategory — direct match
+          where.categoryId = cat.id
+        }
+      }
+    }
+
     if (city)      where.city      = { contains: city, mode: 'insensitive' }
     if (condition) where.condition = condition
 
@@ -149,12 +165,10 @@ export const updateProduct = async (req: AuthRequest, res: Response): Promise<vo
     const { title, description, price, condition, city, state, images, status } = req.body
 
     const existing = await prisma.product.findUnique({ where: { id } })
-
     if (!existing) {
       res.status(404).json({ success: false, message: 'Product not found' })
       return
     }
-
     if (existing.userId !== req.user!.userId) {
       res.status(403).json({ success: false, message: 'You can only edit your own listings' })
       return
@@ -178,7 +192,6 @@ export const updateProduct = async (req: AuthRequest, res: Response): Promise<vo
       },
     })
 
-    // ── Notify seller: product marked as sold ─────────────────────────────
     if (status === 'SOLD' && existing.status !== 'SOLD') {
       await sendNotification({
         userId: existing.userId,
@@ -189,13 +202,12 @@ export const updateProduct = async (req: AuthRequest, res: Response): Promise<vo
       })
     }
 
-    // ── Notify users who favorited: price dropped ─────────────────────────
     if (price && parseFloat(price) < existing.price) {
       const favoriters = await prisma.favorite.findMany({
-        where: { productId: id },
+        where:  { productId: id },
         select: { userId: true },
       })
-      await Promise.all(favoriters.map(f =>
+      await Promise.all(favoriters.map((f: any) =>
         sendNotification({
           userId: f.userId,
           type:   'price_drop',
@@ -216,21 +228,16 @@ export const updateProduct = async (req: AuthRequest, res: Response): Promise<vo
 export const deleteProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string
-
     const existing = await prisma.product.findUnique({ where: { id } })
-
     if (!existing) {
       res.status(404).json({ success: false, message: 'Product not found' })
       return
     }
-
     if (existing.userId !== req.user!.userId) {
       res.status(403).json({ success: false, message: 'You can only delete your own listings' })
       return
     }
-
     await prisma.product.delete({ where: { id } })
-
     res.status(200).json({ success: true, message: 'Product deleted successfully!' })
   } catch (error) {
     console.error('Delete product error:', error)
@@ -248,7 +255,6 @@ export const getMyProducts = async (req: AuthRequest, res: Response): Promise<vo
       },
       orderBy: { createdAt: 'desc' },
     })
-
     res.status(200).json({ success: true, products })
   } catch (error) {
     console.error('Get my products error:', error)
@@ -259,7 +265,6 @@ export const getMyProducts = async (req: AuthRequest, res: Response): Promise<vo
 export const getTrendingProducts = async (req: any, res: Response): Promise<void> => {
   try {
     const limit = parseInt(req.query.limit as string) || 10
-
     const products = await prisma.product.findMany({
       where: { status: 'ACTIVE' },
       include: {
@@ -274,7 +279,6 @@ export const getTrendingProducts = async (req: any, res: Response): Promise<void
       ],
       take: limit,
     })
-
     res.status(200).json({ success: true, products })
   } catch (error) {
     console.error('Get trending products error:', error)

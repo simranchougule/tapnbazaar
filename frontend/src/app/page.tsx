@@ -1,5 +1,4 @@
 'use client'
-import Image from 'next/image'
 
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -17,25 +16,21 @@ const CITIES = [
   'Ahmedabad', 'Jaipur', 'Surat', 'Lucknow',
 ]
 
-const CATEGORIES = [
-  { name: 'Electronics', icon: '📱', slug: 'electronics' },
-  { name: 'Cars',        icon: '🚗', slug: 'cars' },
-  { name: 'Furniture',   icon: '🛋️', slug: 'furniture' },
-  { name: 'Fashion',     icon: '👗', slug: 'fashion' },
-  { name: 'Books',       icon: '📚', slug: 'books' },
-  { name: 'Sports',      icon: '⚽', slug: 'sports' },
-  { name: 'Home',        icon: '🏠', slug: 'home' },
-  { name: 'Jobs',        icon: '💼', slug: 'jobs' },
-  { name: 'Pets',        icon: '🐾', slug: 'pets' },
-  { name: 'Other',       icon: '📦', slug: 'other' },
-]
-
 const SORT_OPTIONS = [
   { label: 'Newest',      value: 'createdAt_desc' },
   { label: 'Oldest',      value: 'createdAt_asc' },
   { label: 'Price: Low',  value: 'price_asc' },
   { label: 'Price: High', value: 'price_desc' },
 ]
+
+const CATEGORY_ORDER = [
+  'vehicles', 'electronics', 'property', 'fashion',
+  'furniture', 'jobs', 'pets', 'sports', 'kids',
+  'education', 'services', 'agriculture'
+]
+
+interface SubCategory { id: string; name: string; slug: string; icon: string }
+interface Category    { id: string; name: string; slug: string; icon: string; children: SubCategory[] }
 
 function HomeContent() {
   const router       = useRouter()
@@ -57,6 +52,22 @@ function HomeContent() {
   const [page, setPage]             = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal]           = useState(0)
+  const [categories, setCategories] = useState<Category[]>([])
+
+  // Fetch categories from API
+  useEffect(() => {
+    api.get('/categories').then(res => {
+      const sorted = [...res.data.categories].sort((a: Category, b: Category) => {
+        const ai = CATEGORY_ORDER.indexOf(a.slug)
+        const bi = CATEGORY_ORDER.indexOf(b.slug)
+        if (ai === -1 && bi === -1) return a.name.localeCompare(b.name)
+        if (ai === -1) return 1
+        if (bi === -1) return -1
+        return ai - bi
+      })
+      setCategories(sorted)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const category = searchParams.get('category') || ''
@@ -164,6 +175,9 @@ function HomeContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const activeCategoryData = categories.find(c => c.slug === activeCategory)
+    || categories.flatMap(c => c.children).find(c => c.slug === activeCategory)
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
@@ -246,22 +260,32 @@ function HomeContent() {
 
       {/* Categories */}
       <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <h2 className="text-lg font-semibold text-slate-900 mb-5">Browse by Category</h2>
-          <div className="grid grid-cols-5 sm:grid-cols-10 gap-3">
-            {CATEGORIES.map(cat => (
-              <button key={cat.slug} onClick={() => router.push("/categories")}
-                className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all cursor-pointer ${activeCategory === cat.slug ? 'bg-orange-50 text-orange-600 scale-105' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-900">Browse by Category</h2>
+            <Link href="/categories" className="text-sm text-orange-500 hover:underline font-medium flex items-center gap-1">
+              All Categories
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-2">
+            {categories.map(cat => (
+              <button
+                key={cat.slug}
+                onClick={() => handleCategoryClick(cat.slug)}
+                className={"flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all cursor-pointer " + (activeCategory === cat.slug ? 'bg-orange-50 text-orange-600 scale-105' : 'bg-slate-50 text-slate-700 hover:bg-orange-50 hover:text-orange-500')}
+              >
                 <span className="text-2xl">{cat.icon}</span>
-                <span className="text-xs font-medium text-center leading-tight">{cat.name}</span>
+                <span className="text-xs font-medium text-center leading-tight">{cat.name.split(' ')[0]}</span>
               </button>
             ))}
           </div>
-          {activeCategory && (
-            <div className="mt-6 inline-flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-xl border border-orange-200">
+
+          {/* Active category filter badge */}
+          {activeCategory && activeCategoryData && (
+            <div className="mt-4 inline-flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-xl border border-orange-200">
               <span className="text-sm font-medium text-orange-900">
-                {CATEGORIES.find(c => c.slug === activeCategory)?.icon}{' '}
-                {CATEGORIES.find(c => c.slug === activeCategory)?.name}
+                {activeCategoryData.icon}{' '}{activeCategoryData.name}
               </span>
               <button onClick={() => router.push('/')} className="text-xs font-medium text-orange-600 hover:text-orange-700 ml-1">×</button>
             </div>
@@ -275,7 +299,7 @@ function HomeContent() {
         {/* Header row with sort/filter */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-slate-900">
-            {activeCategory ? CATEGORIES.find(c => c.slug === activeCategory)?.name + ' Listings' : 'Discover Products'}
+            {activeCategory && activeCategoryData ? activeCategoryData.name + ' Listings' : 'Discover Products'}
             {!loading && <span className="text-sm text-gray-400 font-normal ml-2">({total})</span>}
           </h2>
           <div className="flex items-center gap-2">
@@ -371,7 +395,7 @@ function HomeContent() {
                   </button>
                   <div className="bg-slate-100 h-48 w-full flex items-center justify-center overflow-hidden">
                     {product.images.length > 0 ? (
-                      <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" onError={(e: any) => { e.target.src = '/placeholder.png' }} />
+                      <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
                     ) : (
                       <Tag className="w-12 h-12 text-slate-300" />
                     )}
