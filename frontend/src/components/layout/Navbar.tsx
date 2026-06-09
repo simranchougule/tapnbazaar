@@ -44,7 +44,7 @@ export default function Navbar() {
     if (!isLoggedIn) return
 
     // Initial fetch
-    api.get('/chats/unread').then(res => setUnread(res.data.count)).catch(() => {})
+    api.get('/chats/unread').then(res => { console.log("UNREAD RESPONSE:", res.data); setUnread(res.data.count) }).catch((e) => console.log("UNREAD ERROR:", e))
 
     // Real-time socket update
     const token = localStorage.getItem('token')
@@ -61,7 +61,7 @@ export default function Navbar() {
     }
 
     return () => { socket.off('unread_update') }
-  }, [isLoggedIn, pathname])
+  }, [isLoggedIn])
 
   const handleLogout = () => {
     logout()

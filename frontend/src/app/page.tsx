@@ -250,7 +250,7 @@ function HomeContent() {
           <h2 className="text-lg font-semibold text-slate-900 mb-5">Browse by Category</h2>
           <div className="grid grid-cols-5 sm:grid-cols-10 gap-3">
             {CATEGORIES.map(cat => (
-              <button key={cat.slug} onClick={() => handleCategoryClick(cat.slug)}
+              <button key={cat.slug} onClick={() => router.push("/categories")}
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all cursor-pointer ${activeCategory === cat.slug ? 'bg-orange-50 text-orange-600 scale-105' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>
                 <span className="text-2xl">{cat.icon}</span>
                 <span className="text-xs font-medium text-center leading-tight">{cat.name}</span>

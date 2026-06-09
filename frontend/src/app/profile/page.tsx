@@ -20,7 +20,7 @@ export default function ProfilePage() {
   const [editing, setEditing]     = useState(false)
   const [saving, setSaving]       = useState(false)
   const [favCount, setFavCount]   = useState(0)
-  const [activeTab, setActiveTab] = useState<'listings' | 'purchases'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'chats'>('listings')
   const [editForm, setEditForm]   = useState({ name: '', phone: '', city: '', state: '', bio: '' })
 
   useEffect(() => { loadFromStorage() }, [])
@@ -194,19 +194,19 @@ export default function ProfilePage() {
             <TrendingUp className="w-4 h-4" />
             My Listings
           </button>
-          <button onClick={() => setActiveTab('purchases')}
-            className={"flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors " + (activeTab === 'purchases' ? 'bg-orange-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300')}>
+          <button onClick={() => setActiveTab('chats')}
+            className={"flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors " + (activeTab === 'chats' ? 'bg-orange-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300')}>
             <ShoppingBag className="w-4 h-4" />
-            My Purchases
+            My Chats
           </button>
           {activeTab === 'listings' && (
             <Link href="/products/new" className="ml-auto bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
               + Post New
             </Link>
           )}
-          {activeTab === 'purchases' && (
+          {activeTab === 'chats' && (
             <Link href="/" className="ml-auto border border-orange-500 text-orange-500 hover:bg-orange-50 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
-              Browse Products
+              View Chats
             </Link>
           )}
         </div>
@@ -286,13 +286,13 @@ export default function ProfilePage() {
           </>
         )}
 
-        {activeTab === 'purchases' && (
+        {activeTab === 'chats' && (
           <div className="text-center py-16 bg-white rounded-2xl">
             <ShoppingBag className="w-12 h-12 text-orange-200 mx-auto mb-3" />
-            <p className="text-gray-600 font-semibold mb-1">No purchases yet</p>
-            <p className="text-gray-400 text-sm mb-4">Discover great deals and buy from trusted sellers across India.</p>
-            <Link href="/" className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
-              Browse &amp; Buy Now
+            <p className="text-gray-600 font-semibold mb-1">Your buying activity</p>
+            <p className="text-gray-400 text-sm mb-4">All your conversations with sellers are in one place.</p>
+            <Link href="/chats" className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
+              View My Chats
             </Link>
           </div>
         )}

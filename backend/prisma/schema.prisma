@@ -28,6 +28,7 @@ model User {
   favorites        Favorite[]
   chats            ChatParticipant[]
   notifications    Notification[]
+  reports          Report[]
 
   @@index([email])
   @@index([createdAt])
@@ -35,15 +36,19 @@ model User {
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
   icon        String?
   description String?
-  createdAt   DateTime  @default(now())
+  parentId    String?
+  createdAt   DateTime   @default(now())
 
+  parent      Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children    Category[] @relation("SubCategories")
   products    Product[]
 
+  @@index([parentId])
   @@map("categories")
 }
 
@@ -68,6 +73,7 @@ model Product {
   category    Category      @relation(fields: [categoryId], references: [id])
   favorites   Favorite[]
   chats       Chat[]
+  reports     Report[]
 
   @@index([userId])
   @@index([categoryId])
@@ -154,19 +160,6 @@ model Message {
   @@map("messages")
 }
 
-enum Condition {
-  NEW
-  LIKE_NEW
-  GOOD
-  FAIR
-  POOR
-}
-
-enum ProductStatus {
-  ACTIVE
-  SOLD
-  INACTIVE
-}
 model Report {
   id        String   @id @default(cuid())
   productId String
@@ -183,4 +176,18 @@ model Report {
   @@index([productId])
   @@index([status])
   @@map("reports")
+}
+
+enum Condition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ProductStatus {
+  ACTIVE
+  SOLD
+  INACTIVE
 }
