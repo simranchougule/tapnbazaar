@@ -5,7 +5,7 @@ import { sendNotification } from '../services/notificationService'
 
 export const createProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { title, description, price, condition, categoryId, city, state, images } = req.body
+    const { title, description, price, condition, categoryId, city, state, images, latitude, longitude, area, pincode } = req.body
 
     if (!title || !description || !price || !categoryId || !city || !state) {
       res.status(400).json({ success: false, message: 'Please provide all required fields' })
@@ -282,6 +282,57 @@ export const getTrendingProducts = async (req: any, res: Response): Promise<void
     res.status(200).json({ success: true, products })
   } catch (error) {
     console.error('Get trending products error:', error)
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
+
+// ─── LOCATION HELPERS ────────────────────────────────────────────────────────
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+}
+
+export const getNearbyProducts = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const lat      = parseFloat(req.query.lat as string)
+    const lng      = parseFloat(req.query.lng as string)
+    const radiusKm = parseFloat(req.query.radius as string) || 25
+    const limit    = parseInt(req.query.limit as string) || 20
+
+    if (isNaN(lat) || isNaN(lng)) {
+      res.status(400).json({ success: false, message: 'lat and lng are required' })
+      return
+    }
+
+    const products = await prisma.product.findMany({
+      where: {
+        status:    'ACTIVE',
+        latitude:  { not: null },
+        longitude: { not: null },
+      },
+      include: {
+        user:     { select: { id: true, name: true, avatar: true, city: true } },
+        category: { select: { id: true, name: true, slug: true, icon: true } },
+        _count:   { select: { favorites: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    })
+
+    const nearby = products
+      .map(p => ({ ...p, distance: haversineDistance(lat, lng, p.latitude!, p.longitude!) }))
+      .filter(p => p.distance <= radiusKm)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+
+    res.json({ success: true, products: nearby, total: nearby.length })
+  } catch (error) {
+    console.error('Get nearby products error:', error)
     res.status(500).json({ success: false, message: 'Something went wrong.' })
   }
 }

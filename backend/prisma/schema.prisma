@@ -61,6 +61,10 @@ model Product {
   status      ProductStatus @default(ACTIVE)
   city        String
   state       String
+  area        String?
+  pincode     String?
+  latitude    Float?
+  longitude   Float?
   images      String[]
   views       Int           @default(0)
   createdAt   DateTime      @default(now())
@@ -80,6 +84,8 @@ model Product {
   @@index([status])
   @@index([createdAt])
   @@index([city])
+  @@index([latitude])
+  @@index([longitude])
   @@map("products")
 }
 

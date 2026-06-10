@@ -18,6 +18,7 @@ router.get('/user/my-listings', protect, getMyProducts)
 // Public routes
 router.get('/', getProducts)
 router.get('/trending', getTrendingProducts)
+router.get('/nearby',   getNearbyProducts)
 router.get('/:id', getProduct)
 
 // Protected routes
