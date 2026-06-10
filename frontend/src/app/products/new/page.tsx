@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Category } from '@/types'
-import { ArrowLeft, Upload, X } from 'lucide-react'
+import { ArrowLeft, Upload, X, MapPin, Locate, Navigation } from 'lucide-react'
 import { INDIA_STATES } from '@/lib/constants'
 
 const CONDITIONS = [
@@ -26,6 +26,8 @@ export default function CreateProductPage() {
   const [loading, setLoading]       = useState(false)
   const [uploading, setUploading]   = useState(false)
   const [images, setImages]         = useState<string[]>([])
+  const [locating, setLocating]     = useState(false)
+  const [locationSet, setLocationSet] = useState(false)
 
   const [formData, setFormData] = useState({
     title:       '',
@@ -35,6 +37,10 @@ export default function CreateProductPage() {
     categoryId:  '',
     city:        '',
     state:       '',
+    area:        '',
+    pincode:     '',
+    latitude:    '',
+    longitude:   '',
   })
 
   useEffect(() => {
@@ -52,7 +58,15 @@ export default function CreateProductPage() {
   const fetchCategories = async () => {
     try {
       const res = await api.get('/categories')
-      setCategories(res.data.categories)
+      // Flatten parent + children for the select dropdown
+      const flat: Category[] = []
+      res.data.categories.forEach((cat: any) => {
+        flat.push(cat)
+        if (cat.children?.length > 0) {
+          cat.children.forEach((child: any) => flat.push({ ...child, name: `  └ ${child.name}` }))
+        }
+      })
+      setCategories(flat)
     } catch (error) {
       toast.error('Failed to load categories')
     }
@@ -62,6 +76,73 @@ export default function CreateProductPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  // GPS location detection
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('GPS not supported on this device')
+      return
+    }
+
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+
+        try {
+          // Reverse geocode using free OpenStreetMap Nominatim API
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+          )
+          const data = await res.json()
+
+          const addr   = data.address || {}
+          const city   = addr.city || addr.town || addr.village || addr.county || ''
+          const state  = addr.state || ''
+          const area   = addr.suburb || addr.neighbourhood || addr.residential || addr.road || ''
+          const pincode = addr.postcode || ''
+
+          // Match state to INDIA_STATES list
+          const matchedState = INDIA_STATES.find(
+            s => s.toLowerCase() === state.toLowerCase()
+          ) || state
+
+          setFormData(f => ({
+            ...f,
+            latitude:  latitude.toString(),
+            longitude: longitude.toString(),
+            city,
+            state:   matchedState,
+            area,
+            pincode,
+          }))
+
+          setLocationSet(true)
+          toast.success('Location detected!')
+        } catch {
+          // Even if reverse geocode fails, save lat/lng
+          setFormData(f => ({
+            ...f,
+            latitude:  latitude.toString(),
+            longitude: longitude.toString(),
+          }))
+          setLocationSet(true)
+          toast.success('GPS location saved. Please enter city manually.')
+        } finally {
+          setLocating(false)
+        }
+      },
+      (error) => {
+        setLocating(false)
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error('Location permission denied. Please enter city manually.')
+        } else {
+          toast.error('Could not get location. Please enter manually.')
+        }
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    )
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +191,9 @@ export default function CreateProductPage() {
       setLoading(true)
       const res = await api.post('/products', {
         ...formData,
-        price: parseFloat(formData.price),
+        price:     parseFloat(formData.price),
+        latitude:  formData.latitude  ? parseFloat(formData.latitude)  : undefined,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
         images,
       })
 
@@ -149,35 +232,22 @@ export default function CreateProductPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Photos (max 5)
               </label>
-
-              {/* Image Preview Grid */}
               {images.length > 0 && (
                 <div className="grid grid-cols-5 gap-2 mb-3">
                   {images.map((url, index) => (
                     <div key={index} className="relative aspect-square">
-                      <img
-                        src={url}
-                        alt=""
-                        className="w-full h-full object-cover rounded-xl border border-gray-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                      >
+                      <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-gray-200" />
+                      <button type="button" onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
                         <X className="w-3 h-3" />
                       </button>
                       {index === 0 && (
-                        <span className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                          Main
-                        </span>
+                        <span className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">Main</span>
                       )}
                     </div>
                   ))}
                 </div>
               )}
-
-              {/* Upload Button */}
               {images.length < 5 && (
                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
                   {uploading ? (
@@ -188,22 +258,11 @@ export default function CreateProductPage() {
                   ) : (
                     <div className="flex flex-col items-center gap-2">
                       <Upload className="w-8 h-8 text-gray-400" />
-                      <span className="text-sm text-gray-500">
-                        Click to upload photos
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        PNG, JPG up to 5MB each
-                      </span>
+                      <span className="text-sm text-gray-500">Click to upload photos</span>
+                      <span className="text-xs text-gray-400">PNG, JPG up to 5MB each</span>
                     </div>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    disabled={uploading}
-                  />
+                  <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" disabled={uploading} />
                 </label>
               )}
             </div>
@@ -213,14 +272,9 @@ export default function CreateProductPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Title <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
+              <input type="text" name="title" value={formData.title} onChange={handleChange}
                 placeholder="e.g. iPhone 13 Pro Max 256GB"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-              />
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
             </div>
 
             {/* Category */}
@@ -228,17 +282,11 @@ export default function CreateProductPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Category <span className="text-red-500">*</span>
               </label>
-              <select
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white"
-              >
+              <select name="categoryId" value={formData.categoryId} onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white">
                 <option value="">Select a category</option>
                 {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.icon} {cat.name}
-                  </option>
+                  <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
                 ))}
               </select>
             </div>
@@ -248,15 +296,9 @@ export default function CreateProductPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Price (Rs.) <span className="text-red-500">*</span>
               </label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                placeholder="e.g. 15000"
-                min="0"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-              />
+              <input type="number" name="price" value={formData.price} onChange={handleChange}
+                placeholder="e.g. 15000" min="0"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
             </div>
 
             {/* Condition */}
@@ -266,16 +308,13 @@ export default function CreateProductPage() {
               </label>
               <div className="grid grid-cols-5 gap-2">
                 {CONDITIONS.map((cond) => (
-                  <button
-                    key={cond.value}
-                    type="button"
+                  <button key={cond.value} type="button"
                     onClick={() => setFormData({ ...formData, condition: cond.value })}
                     className={`py-2 px-1 text-xs font-medium rounded-xl border transition-colors ${
                       formData.condition === cond.value
                         ? 'bg-orange-500 border-orange-500 text-white'
                         : 'border-gray-200 text-gray-600 hover:border-orange-300'
-                    }`}
-                  >
+                    }`}>
                     {cond.label}
                   </button>
                 ))}
@@ -287,55 +326,99 @@ export default function CreateProductPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Description <span className="text-red-500">*</span>
               </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
+              <textarea name="description" value={formData.description} onChange={handleChange}
                 placeholder="Describe your item — condition, age, reason for selling..."
                 rows={5}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 resize-none"
-              />
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 resize-none" />
             </div>
 
-            {/* City and State */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City <span className="text-red-500">*</span>
+            {/* Location Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Location <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  placeholder="Pune"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="state"
-                  value={formData.state}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white"
+                <button
+                  type="button"
+                  onClick={handleGetLocation}
+                  disabled={locating}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    locationSet
+                      ? 'bg-green-50 text-green-600 border border-green-200'
+                      : 'bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100'
+                  }`}
                 >
-                  <option value="">Select state</option>
-                  {INDIA_STATES.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                  {locating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      Detecting...
+                    </>
+                  ) : locationSet ? (
+                    <>
+                      <Navigation className="w-4 h-4" />
+                      Location Set ✓
+                    </>
+                  ) : (
+                    <>
+                      <Locate className="w-4 h-4" />
+                      Use My Location
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Location detected banner */}
+              {locationSet && formData.latitude && (
+                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+                  <MapPin className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <p className="text-sm text-green-700">
+                    GPS coordinates saved — buyers can find this listing on the map
+                  </p>
+                </div>
+              )}
+
+              {/* City and State */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    City <span className="text-red-500">*</span>
+                  </label>
+                  <input type="text" name="city" value={formData.city} onChange={handleChange}
+                    placeholder="Pune"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    State <span className="text-red-500">*</span>
+                  </label>
+                  <select name="state" value={formData.state} onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white">
+                    <option value="">Select state</option>
+                    {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Area and Pincode */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Area / Locality</label>
+                  <input type="text" name="area" value={formData.area} onChange={handleChange}
+                    placeholder="Baner, Koregaon Park..."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Pincode</label>
+                  <input type="text" name="pincode" value={formData.pincode} onChange={handleChange}
+                    placeholder="411045"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
+                </div>
               </div>
             </div>
 
             {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading || uploading}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
-            >
+            <button type="submit" disabled={loading || uploading}
+              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2">
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
