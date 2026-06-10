@@ -254,6 +254,32 @@ export default function ProductDetailPage() {
               <MapPin className="w-4 h-4" />
               <span>{product.city}, {product.state}</span>
             </div>
+            {/* Area, Pincode and View on Map */}
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {(product as any).area && (
+                  <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                    📍 {(product as any).area}
+                  </span>
+                )}
+                {(product as any).pincode && (
+                  <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                    {(product as any).pincode}
+                  </span>
+                )}
+              </div>
+              {(product as any).latitude && (product as any).longitude && (
+                <a
+                  href={`https://www.google.com/maps?q=${(product as any).latitude},${(product as any).longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-600 font-medium border border-orange-200 px-3 py-1.5 rounded-xl hover:bg-orange-50 transition-colors"
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  View on Map
+                </a>
+              )}
+            </div>
 
             <p className="text-gray-600 text-sm leading-relaxed">{product.description}</p>
 
