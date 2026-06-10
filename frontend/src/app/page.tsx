@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
-import { Search, MapPin, Tag, Heart, SlidersHorizontal, ChevronLeft, ChevronRight, Flame, ChevronDown, ShoppingBag, Plus } from 'lucide-react'
+import { Search, MapPin, Navigation, Tag, Heart, SlidersHorizontal, ChevronLeft, ChevronRight, Flame, ChevronDown, ShoppingBag, Plus } from 'lucide-react'
 import TrendingProducts from '@/components/trending/TrendingProducts'
 import api from '@/lib/api'
 import { Product } from '@/types'
@@ -52,6 +52,12 @@ function HomeContent() {
   const [page, setPage]             = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal]           = useState(0)
+  const [nearbyProducts, setNearbyProducts]   = useState<Product[]>([])
+  const [nearbyLoading, setNearbyLoading]     = useState(false)
+  const [userLat, setUserLat]                 = useState<number | null>(null)
+  const [userLng, setUserLng]                 = useState<number | null>(null)
+  const [nearbyRadius, setNearbyRadius]       = useState(25)
+  const [showNearby, setShowNearby]           = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
 
   // Fetch categories from API
@@ -97,6 +103,28 @@ function HomeContent() {
       const res = await api.get('/favorites')
       setFavorites(new Set(res.data.products.map((p: Product) => p.id)))
     } catch { /* ignore */ }
+  }
+
+  const fetchNearby = async (lat: number, lng: number, radius = 25) => {
+    try {
+      setNearbyLoading(true)
+      const res = await api.get(`/products/nearby?lat=${lat}&lng=${lng}&radius=${radius}&limit=10`)
+      setNearbyProducts(res.data.products)
+    } catch { /* ignore */ }
+    finally { setNearbyLoading(false) }
+  }
+
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setUserLat(pos.coords.latitude)
+        setUserLng(pos.coords.longitude)
+        setShowNearby(true)
+        fetchNearby(pos.coords.latitude, pos.coords.longitude, nearbyRadius)
+      },
+      () => {}
+    )
   }
 
   const fetchProducts = async (
@@ -288,6 +316,82 @@ function HomeContent() {
                 {activeCategoryData.icon}{' '}{activeCategoryData.name}
               </span>
               <button onClick={() => router.push('/')} className="text-xs font-medium text-orange-600 hover:text-orange-700 ml-1">×</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+
+      {/* Near You Section */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+                <Navigation className="w-5 h-5 text-orange-500" />
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-800">Products Near You</h2>
+                <p className="text-xs text-gray-400">Find listings close to your location</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {showNearby && (
+                <select value={nearbyRadius} onChange={e => { setNearbyRadius(Number(e.target.value)); if (userLat && userLng) fetchNearby(userLat, userLng, Number(e.target.value)) }}
+                  className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-orange-500">
+                  <option value={5}>Within 5 km</option>
+                  <option value={10}>Within 10 km</option>
+                  <option value={25}>Within 25 km</option>
+                  <option value={50}>Within 50 km</option>
+                  <option value={100}>Within 100 km</option>
+                </select>
+              )}
+              <button onClick={handleDetectLocation}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${showNearby ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100'}`}>
+                <Navigation className="w-4 h-4" />
+                {showNearby ? 'Refresh' : 'Detect Location'}
+              </button>
+            </div>
+          </div>
+
+          {showNearby && (
+            <div className="mt-4">
+              {nearbyLoading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="bg-gray-100 rounded-xl h-40 animate-pulse" />
+                  ))}
+                </div>
+              ) : nearbyProducts.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No listings found within {nearbyRadius} km</p>
+                  <p className="text-xs mt-1">Try increasing the radius or post a listing in your area</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {nearbyProducts.map((product: any) => (
+                    <Link key={product.id} href={'/products/' + product.id}
+                      className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-md transition-shadow border border-gray-100">
+                      <div className="h-32 bg-gray-100 overflow-hidden">
+                        {product.images.length > 0 ? (
+                          <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" onError={(e: any) => { e.target.src = '/placeholder.png' }} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center"><MapPin className="w-8 h-8 text-gray-300" /></div>
+                        )}
+                      </div>
+                      <div className="p-2">
+                        <p className="font-bold text-gray-900 text-sm">Rs.{product.price.toLocaleString('en-IN')}</p>
+                        <p className="text-gray-600 text-xs truncate mt-0.5">{product.title}</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Navigation className="w-3 h-3 text-orange-400" />
+                          <span className="text-xs text-orange-500 font-medium">{product.distance?.toFixed(1)} km away</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
