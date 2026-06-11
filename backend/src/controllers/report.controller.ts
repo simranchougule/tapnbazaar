@@ -8,7 +8,7 @@ const USER_REPORT_REASONS = ['Scam', 'Harassment', 'Fake Account', 'Spam', 'Othe
 // POST /api/reports/product/:productId
 export const reportProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { productId } = req.params
+    const productId = req.params.productId as string
     const { reason, details } = req.body
     const userId = req.user!.userId
 
@@ -41,7 +41,7 @@ export const reportProduct = async (req: AuthRequest, res: Response): Promise<vo
 // POST /api/reports/user/:reportedUserId
 export const reportUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { reportedUserId } = req.params
+    const reportedUserId = req.params.reportedUserId as string
     const { reason, details } = req.body
     const reporterId = req.user!.userId
 

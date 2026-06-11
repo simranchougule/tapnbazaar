@@ -241,6 +241,29 @@ export default function ProfilePage() {
                   </span>
                 )}
               </div>
+
+              {/* Trust badges */}
+              <div className="flex gap-2 mt-3 flex-wrap">
+                {user.phoneVerified ? (
+                  <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 border border-green-100 px-2 py-1 rounded-full">
+                    <ShieldCheck className="w-3 h-3" /> Phone Verified
+                  </span>
+                ) : (
+                  <button onClick={() => setShowVerifyModal(true)}
+                    className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full hover:bg-amber-100 transition-colors">
+                    <ShieldCheck className="w-3 h-3" /> Verify Phone
+                  </button>
+                )}
+                {user.emailVerified ? (
+                  <span className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 border border-blue-100 px-2 py-1 rounded-full">
+                    <ShieldCheck className="w-3 h-3" /> Email Verified
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 border border-gray-200 px-2 py-1 rounded-full">
+                    Email Unverified
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Nav Sections */}
@@ -420,6 +443,13 @@ export default function ProfilePage() {
           </main>
         </div>
       </div>
+
+      {showVerifyModal && (
+        <PhoneVerifyModal
+          onVerified={() => setShowVerifyModal(false)}
+          onClose={() => setShowVerifyModal(false)}
+        />
+      )}
     </div>
   )
 }
