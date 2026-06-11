@@ -7,11 +7,12 @@ import toast from 'react-hot-toast'
 import Navbar from '@/components/layout/Navbar'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
-import { ArrowLeft, MapPin, Tag, Edit, User, Heart, CheckCircle, MessageCircle, Plus, X, Copy, Check, Mail, BadgeIndianRupee } from 'lucide-react'
+import { ArrowLeft, MapPin, Tag, Edit, User, Heart, CheckCircle, MessageCircle, Plus, X, Copy, Check, Mail, BadgeIndianRupee, Flag } from 'lucide-react'
 import { getSocket } from '@/lib/socket'
 import { Product } from '@/types'
 import InlineChat from '@/components/InlineChat'
 import ImageLightbox from '@/components/ImageLightbox'
+import ReportModal from '@/components/ReportModal'
 
 const CONDITION_LABELS: Record<string, string> = {
   NEW:      'Brand New',
@@ -67,6 +68,7 @@ export default function ProductDetailPage() {
   const [showOffer, setShowOffer]     = useState(false)
   const [offerPrice, setOfferPrice]   = useState('')
   const [copied, setCopied]           = useState(false)
+  const [showReport, setShowReport]   = useState(false)
 
   useEffect(() => { loadFromStorage() }, [])
   useEffect(() => { fetchProduct() }, [])
@@ -327,6 +329,16 @@ export default function ProductDetailPage() {
               </div>
             )}
 
+            {/* Report listing — shown to non-owners */}
+            {!isOwner && isLoggedIn && (
+              <button
+                onClick={() => setShowReport(true)}
+                className="flex items-center justify-center gap-2 text-gray-400 hover:text-red-500 text-xs py-2 transition-colors"
+              >
+                <Flag className="w-3.5 h-3.5" /> Report this listing
+              </button>
+            )}
+
             {/* Owner actions */}
             {isOwner && (
               <div className="flex flex-col gap-2">
@@ -456,6 +468,15 @@ export default function ProductDetailPage() {
 
       {lightbox && (
         <ImageLightbox images={product.images} index={activeImage} onClose={() => setLightbox(false)} onChange={setActiveImage} />
+      )}
+
+      {showReport && (
+        <ReportModal
+          type="product"
+          targetId={product.id}
+          targetName={product.title}
+          onClose={() => setShowReport(false)}
+        />
       )}
 
       {/* Related products */}

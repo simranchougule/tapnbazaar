@@ -20,6 +20,32 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
       return
     }
 
+    // ── Phone verification gate ───────────────────────────────────────────────
+    const seller = await prisma.user.findUnique({
+      where:  { id: req.user!.userId },
+      select: { phoneVerified: true, isTrusted: true },
+    })
+    if (!seller?.phoneVerified) {
+      res.status(403).json({ success: false, message: 'Phone verification required to post listings', code: 'PHONE_NOT_VERIFIED' })
+      return
+    }
+
+    // ── Daily listing limit ───────────────────────────────────────────────────
+    const dayLimit  = seller.isTrusted ? 50 : 3
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+    const todayCount = await prisma.product.count({
+      where: { userId: req.user!.userId, createdAt: { gte: todayStart } },
+    })
+    if (todayCount >= dayLimit) {
+      res.status(429).json({
+        success: false,
+        message: seller.isTrusted
+          ? `Daily limit of ${dayLimit} listings reached. Try again tomorrow.`
+          : `New accounts can post up to ${dayLimit} listings per day. Upgrade to trusted seller for higher limits.`,
+      })
+      return
+    }
+
     const category = await prisma.category.findUnique({ where: { id: categoryId } })
     if (!category) {
       res.status(400).json({ success: false, message: 'Invalid category' })

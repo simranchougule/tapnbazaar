@@ -8,19 +8,27 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  password     String
-  name         String
-  phone        String?
-  avatar       String?
-  bio          String?
-  city         String?
-  state        String?
-  isVerified   Boolean   @default(false)
-  isAdmin      Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String
+  name              String
+  phone             String?
+  avatar            String?
+  bio               String?
+  city              String?
+  state             String?
+  preferredCity     String?
+  preferredLocality String?
+  isVerified        Boolean   @default(false)
+  isAdmin           Boolean   @default(false)
+  phoneVerified     Boolean   @default(false)
+  emailVerified     Boolean   @default(false)
+  isTrusted         Boolean   @default(false)
+  emailVerifyToken  String?
+  phoneOtp          String?
+  phoneOtpExpiry    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   products         Product[]
   sentMessages     Message[]        @relation("SentMessages")
@@ -28,7 +36,9 @@ model User {
   favorites        Favorite[]
   chats            ChatParticipant[]
   notifications    Notification[]
-  reports          Report[]
+  reports          Report[]          @relation("ReporterReports")
+  reportedBy       UserReport[]      @relation("ReportedUser")
+  userReports      UserReport[]      @relation("UserReporter")
 
   @@index([email])
   @@index([createdAt])
@@ -59,8 +69,10 @@ model Product {
   price       Float
   condition   Condition     @default(GOOD)
   status      ProductStatus @default(ACTIVE)
-  city        String
+  country     String        @default("India")
   state       String
+  city        String
+  locality    String?
   area        String?
   pincode     String?
   latitude    Float?
@@ -84,6 +96,8 @@ model Product {
   @@index([status])
   @@index([createdAt])
   @@index([city])
+  @@index([locality])
+  @@index([pincode])
   @@index([latitude])
   @@index([longitude])
   @@map("products")
@@ -176,12 +190,30 @@ model Report {
   createdAt DateTime @default(now())
 
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation("ReporterReports", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
   @@index([productId])
   @@index([status])
   @@map("reports")
+}
+
+model UserReport {
+  id             String   @id @default(cuid())
+  reportedUserId String
+  reporterId     String
+  reason         String
+  details        String?
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+
+  reportedUser   User     @relation("ReportedUser",  fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reporter       User     @relation("UserReporter",  fields: [reporterId],     references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, reportedUserId])
+  @@index([reportedUserId])
+  @@index([status])
+  @@map("user_reports")
 }
 
 enum Condition {

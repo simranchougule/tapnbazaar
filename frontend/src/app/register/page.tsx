@@ -48,7 +48,7 @@ export default function RegisterPage() {
 
       if (res.data.success) {
         setAuth(res.data.user, res.data.token)
-        toast.success('Account created successfully!')
+        toast.success('Account created! Please check your email to verify your account.')
         router.push('/')
       }
     } catch (error: any) {

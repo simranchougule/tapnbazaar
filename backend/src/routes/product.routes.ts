@@ -7,6 +7,7 @@ import {
   deleteProduct,
   getMyProducts,
   getTrendingProducts,
+  getNearbyProducts,
 } from '../controllers/product.controller'
 import { protect } from '../middleware/auth.middleware'
 
@@ -16,14 +17,14 @@ const router = Router()
 router.get('/user/my-listings', protect, getMyProducts)
 
 // Public routes
-router.get('/', getProducts)
+router.get('/',         getProducts)
 router.get('/trending', getTrendingProducts)
 router.get('/nearby',   getNearbyProducts)
-router.get('/:id', getProduct)
+router.get('/:id',      getProduct)
 
 // Protected routes
-router.post('/', protect, createProduct)
-router.put('/:id', protect, updateProduct)
+router.post('/',    protect, createProduct)
+router.put('/:id',  protect, updateProduct)
 router.delete('/:id', protect, deleteProduct)
 
 export default router

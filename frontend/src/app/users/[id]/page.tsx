@@ -1,13 +1,14 @@
 'use client'
-import Image from 'next/image'
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import api from '@/lib/api'
-import { MapPin, Tag, Package, Calendar } from 'lucide-react'
+import { useAuthStore } from '@/store/authStore'
+import { MapPin, Tag, Package, Calendar, Flag } from 'lucide-react'
 import { Product } from '@/types'
+import ReportModal from '@/components/ReportModal'
 
 interface PublicUser {
   id:        string
@@ -23,8 +24,10 @@ interface PublicUser {
 export default function SellerProfilePage() {
   const { id }    = useParams()
   const router    = useRouter()
-  const [user, setUser]       = useState<PublicUser | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user: currentUser, isLoggedIn } = useAuthStore()
+  const [user, setUser]           = useState<PublicUser | null>(null)
+  const [loading, setLoading]     = useState(true)
+  const [showReport, setShowReport] = useState(false)
 
   useEffect(() => {
     api.get('/auth/users/' + id)
@@ -53,6 +56,7 @@ export default function SellerProfilePage() {
   if (!user) return null
 
   const memberSince = new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+  const isOwnProfile = currentUser?.id === user.id
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -77,9 +81,19 @@ export default function SellerProfilePage() {
               <span>Member since {memberSince}</span>
             </div>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-800">{user.products.length}</p>
-            <p className="text-xs text-gray-500">Active Listings</p>
+          <div className="flex flex-col items-end gap-3">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-800">{user.products.length}</p>
+              <p className="text-xs text-gray-500">Active Listings</p>
+            </div>
+            {isLoggedIn && !isOwnProfile && (
+              <button
+                onClick={() => setShowReport(true)}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-200 px-3 py-1.5 rounded-xl transition-colors"
+              >
+                <Flag className="w-3.5 h-3.5" /> Report Seller
+              </button>
+            )}
           </div>
         </div>
 
@@ -116,6 +130,15 @@ export default function SellerProfilePage() {
           </div>
         )}
       </div>
+
+      {showReport && (
+        <ReportModal
+          type="user"
+          targetId={user.id}
+          targetName={user.name}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </div>
   )
 }

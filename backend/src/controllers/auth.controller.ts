@@ -4,9 +4,13 @@
 
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { prisma } from '../lib/prisma'
 import { generateToken } from '../utils/jwt'
 import { AuthRequest } from '../middleware/auth.middleware'
+import { sendEmailVerification, sendOtpEmail } from '../services/emailService'
+
+const DISPOSABLE_DOMAINS = ['mailinator.com','guerrillamail.com','10minutemail.com','throwam.com','tempmail.com','yopmail.com','sharklasers.com','trashmail.com']
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -19,6 +23,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       res.status(400).json({ success: false, message: 'Please provide a valid email address' }); return
+    }
+
+    // Block disposable email domains
+    const domain = email.toLowerCase().split('@')[1]
+    if (DISPOSABLE_DOMAINS.includes(domain)) {
+      res.status(400).json({ success: false, message: 'Disposable email addresses are not allowed' }); return
     }
 
     // Step 2 — Check if email already exists
@@ -41,6 +51,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const hashedPassword = await bcrypt.hash(password, 12)
 
     // Step 4 — Create the user in database
+    const emailVerifyToken = crypto.randomBytes(32).toString('hex')
     const user = await prisma.user.create({
       data: {
         name,
@@ -49,8 +60,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         phone: phone || null,
         city: city || null,
         state: state || null,
+        emailVerifyToken,
       },
     })
+
+    // Send verification email (non-blocking)
+    sendEmailVerification(user.email, emailVerifyToken).catch(() => {})
 
     // Step 5 — Generate a JWT token for immediate login after register
     const token = generateToken({
@@ -73,6 +88,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         state: user.state,
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
+        phoneVerified: user.phoneVerified,
+        emailVerified: user.emailVerified,
         createdAt: user.createdAt,
       },
     })
@@ -149,6 +166,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         state: user.state,
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
+        phoneVerified: user.phoneVerified,
+        emailVerified: user.emailVerified,
         createdAt: user.createdAt,
       },
     })
@@ -259,6 +278,118 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       user: { id: user.id, name: user.name, email: user.email, phone: user.phone, avatar: user.avatar, city: user.city, state: user.state, isVerified: user.isVerified },
     })
   } catch (error) {
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
+
+// ─── VERIFY EMAIL ─────────────────────────────────────────────────────────────
+// GET /api/auth/verify-email?token=xxx
+export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.query
+    if (!token) { res.status(400).json({ success: false, message: 'Token is required' }); return }
+
+    const user = await prisma.user.findFirst({ where: { emailVerifyToken: token as string } })
+    if (!user) { res.status(400).json({ success: false, message: 'Invalid or expired token' }); return }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data:  { emailVerified: true, isVerified: true, emailVerifyToken: null },
+    })
+
+    res.status(200).json({ success: true, message: 'Email verified successfully!' })
+  } catch {
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
+
+// ─── SEND PHONE OTP ───────────────────────────────────────────────────────────
+// POST /api/auth/send-otp  { phone }
+export const sendPhoneOtp = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { phone } = req.body
+    if (!phone || !/^\d{10}$/.test(phone.replace(/\s/g, ''))) {
+      res.status(400).json({ success: false, message: 'Please provide a valid 10-digit phone number' }); return
+    }
+
+    const otp    = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiry = new Date(Date.now() + 10 * 60 * 1000) // 10 mins
+
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data:  { phone, phoneOtp: otp, phoneOtpExpiry: expiry },
+    })
+
+    // Send OTP via email (since we don't have an SMS provider configured)
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true } })
+    if (user) await sendOtpEmail(user.email, otp).catch(() => {})
+
+    res.status(200).json({ success: true, message: 'OTP sent to your registered email' })
+  } catch {
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
+
+// ─── VERIFY PHONE OTP ─────────────────────────────────────────────────────────
+// POST /api/auth/verify-otp  { otp }
+export const verifyPhoneOtp = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { otp } = req.body
+    if (!otp) { res.status(400).json({ success: false, message: 'OTP is required' }); return }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } })
+    if (!user) { res.status(404).json({ success: false, message: 'User not found' }); return }
+
+    if (!user.phoneOtp || !user.phoneOtpExpiry) {
+      res.status(400).json({ success: false, message: 'No OTP found. Please request a new one.' }); return
+    }
+    if (new Date() > user.phoneOtpExpiry) {
+      res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' }); return
+    }
+    if (user.phoneOtp !== otp) {
+      res.status(400).json({ success: false, message: 'Invalid OTP' }); return
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data:  { phoneVerified: true, phoneOtp: null, phoneOtpExpiry: null },
+    })
+
+    const token = req.headers.authorization?.split(' ')[1] || ''
+    res.status(200).json({
+      success: true,
+      message: 'Phone number verified!',
+      user: {
+        id: updated.id, name: updated.name, email: updated.email, phone: updated.phone,
+        avatar: updated.avatar, city: updated.city, state: updated.state,
+        isVerified: updated.isVerified, isAdmin: updated.isAdmin,
+        phoneVerified: updated.phoneVerified, emailVerified: updated.emailVerified,
+      },
+    })
+  } catch {
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
+
+// ─── CHANGE PASSWORD ──────────────────────────────────────────────────────────
+// PUT /api/auth/change-password
+export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = req.body
+    if (!currentPassword || !newPassword) { res.status(400).json({ success: false, message: 'All fields are required' }); return }
+    if (newPassword.length < 6) { res.status(400).json({ success: false, message: 'Password must be at least 6 characters' }); return }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } })
+    if (!user) { res.status(404).json({ success: false, message: 'User not found' }); return }
+
+    const valid = await bcrypt.compare(currentPassword, user.password)
+    if (!valid) { res.status(400).json({ success: false, message: 'Current password is incorrect' }); return }
+
+    const hashed = await bcrypt.hash(newPassword, 12)
+    await prisma.user.update({ where: { id: user.id }, data: { password: hashed } })
+
+    res.status(200).json({ success: true, message: 'Password updated successfully!' })
+  } catch {
     res.status(500).json({ success: false, message: 'Something went wrong.' })
   }
 }

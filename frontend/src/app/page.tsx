@@ -4,17 +4,14 @@ import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
-import { Search, MapPin, Navigation, Tag, Heart, SlidersHorizontal, ChevronLeft, ChevronRight, Flame, ChevronDown, ShoppingBag, Plus } from 'lucide-react'
+import LocationSelector from '@/components/LocationSelector'
+import { Search, MapPin, Navigation, Tag, Heart, SlidersHorizontal, ChevronLeft, ChevronRight, Flame, ShoppingBag, Plus } from 'lucide-react'
 import TrendingProducts from '@/components/trending/TrendingProducts'
 import api from '@/lib/api'
 import { Product } from '@/types'
 import { useAuthStore } from '@/store/authStore'
 
-const CITIES = [
-  'All India', 'Mumbai', 'Delhi', 'Bangalore',
-  'Pune', 'Hyderabad', 'Chennai', 'Kolkata',
-  'Ahmedabad', 'Jaipur', 'Surat', 'Lucknow',
-]
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const SORT_OPTIONS = [
   { label: 'Newest',      value: 'createdAt_desc' },
@@ -26,17 +23,51 @@ const SORT_OPTIONS = [
 const CATEGORY_ORDER = [
   'vehicles', 'electronics', 'property', 'fashion',
   'furniture', 'jobs', 'pets', 'sports', 'kids',
-  'education', 'services', 'agriculture'
+  'education', 'services', 'agriculture',
 ]
+
+// Popular localities shown as chips per city
+const POPULAR_LOCALITIES: Record<string, string[]> = {
+  Pune:      ['Wakad', 'Baner', 'Hinjewadi', 'Aundh', 'Kothrud', 'Viman Nagar'],
+  Mumbai:    ['Andheri', 'Bandra', 'Powai', 'Thane', 'Kurla', 'Dadar'],
+  Bangalore: ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR Layout', 'Jayanagar'],
+  Delhi:     ['Dwarka', 'Rohini', 'Lajpat Nagar', 'Saket', 'Vasant Kunj'],
+  Hyderabad: ['Hitech City', 'Gachibowli', 'Banjara Hills', 'Madhapur', 'Kondapur'],
+  Chennai:   ['Anna Nagar', 'T. Nagar', 'Velachery', 'Adyar', 'Porur'],
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface SelectedLocation {
+  state?: string
+  city?: string
+  locality?: string
+}
 
 interface SubCategory { id: string; name: string; slug: string; icon: string }
 interface Category    { id: string; name: string; slug: string; icon: string; children: SubCategory[] }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatLocation(product: any): string {
+  const parts: string[] = []
+  if (product.locality) parts.push(product.locality)
+  if (product.city)     parts.push(product.city)
+  return parts.join(', ') || 'India'
+}
+
+// ─── Inner Page ───────────────────────────────────────────────────────────────
 
 function HomeContent() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const { isLoggedIn } = useAuthStore()
 
+  // location
+  const [selectedLocation, setSelectedLocation] = useState<SelectedLocation>({})
+  const [activeLocalityChip, setActiveLocalityChip] = useState<string | null>(null)
+
+  // products
   const [products, setProducts]     = useState<Product[]>([])
   const [search, setSearch]         = useState('')
   const [loading, setLoading]       = useState(true)
@@ -44,23 +75,34 @@ function HomeContent() {
   const [favorites, setFavorites]   = useState<Set<string>>(new Set())
   const [showFilters, setShowFilters]   = useState(false)
   const [showTrending, setShowTrending] = useState(false)
-  const [showCities, setShowCities]     = useState(false)
-  const [selectedCity, setSelectedCity] = useState('All India')
   const [sortBy, setSortBy]     = useState('createdAt_desc')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const [page, setPage]             = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal]           = useState(0)
+
+  // nearby
   const [nearbyProducts, setNearbyProducts]   = useState<Product[]>([])
   const [nearbyLoading, setNearbyLoading]     = useState(false)
   const [userLat, setUserLat]                 = useState<number | null>(null)
   const [userLng, setUserLng]                 = useState<number | null>(null)
   const [nearbyRadius, setNearbyRadius]       = useState(25)
   const [showNearby, setShowNearby]           = useState(false)
+  const [gpsError, setGpsError]               = useState<string | null>(null)
+
+  // categories
   const [categories, setCategories] = useState<Category[]>([])
 
-  // Fetch categories from API
+  // Popular localities for the selected city
+ const popularLocalities =
+  selectedLocation.city
+    ? (POPULAR_LOCALITIES[selectedLocation.city] ?? []).filter(
+        l => l !== selectedLocation.locality
+      )
+    : []
+
+  // ── Fetch categories ──
   useEffect(() => {
     api.get('/categories').then(res => {
       const sorted = [...res.data.categories].sort((a: Category, b: Category) => {
@@ -75,28 +117,29 @@ function HomeContent() {
     }).catch(() => {})
   }, [])
 
+  // ── Sync URL search params ──
   useEffect(() => {
     const category = searchParams.get('category') || ''
     const q        = searchParams.get('search')   || ''
     const city     = searchParams.get('city')     || ''
+    const locality = searchParams.get('locality') || ''
     setActiveCategory(category)
     setSearch(q)
-    if (city) setSelectedCity(city)
+    if (city || locality) {
+      setSelectedLocation(prev => ({
+        ...prev,
+        ...(city ? { city } : {}),
+        ...(locality ? { locality } : {}),
+      }))
+    }
     setPage(1)
-    fetchProducts(category, q, 1, sortBy, minPrice, maxPrice, city)
+    fetchProducts(category, q, 1, sortBy, minPrice, maxPrice, city, locality)
   }, [searchParams])
 
+  // ── Favorites ──
   useEffect(() => {
     if (isLoggedIn) fetchFavorites()
   }, [isLoggedIn])
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (!(e.target as HTMLElement).closest('.city-dropdown')) setShowCities(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
 
   const fetchFavorites = async () => {
     try {
@@ -105,17 +148,21 @@ function HomeContent() {
     } catch { /* ignore */ }
   }
 
-  const fetchNearby = async (lat: number, lng: number, radius = 25) => {
-    try {
-      setNearbyLoading(true)
-      const res = await api.get(`/products/nearby?lat=${lat}&lng=${lng}&radius=${radius}&limit=10`)
-      setNearbyProducts(res.data.products)
-    } catch { /* ignore */ }
-    finally { setNearbyLoading(false) }
+  // ── Nearby ──
+  const fetchNearby = (lat: number, lng: number, radius = 25) => {
+    setNearbyLoading(true)
+    api.get(`/products/nearby?lat=${lat}&lng=${lng}&radius=${radius}&limit=10`)
+      .then(res => setNearbyProducts(res.data.products))
+      .catch(() => {})
+      .finally(() => setNearbyLoading(false))
   }
 
   const handleDetectLocation = () => {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      setGpsError('Geolocation not supported by your browser.')
+      return
+    }
+    setGpsError(null)
     navigator.geolocation.getCurrentPosition(
       pos => {
         setUserLat(pos.coords.latitude)
@@ -123,23 +170,31 @@ function HomeContent() {
         setShowNearby(true)
         fetchNearby(pos.coords.latitude, pos.coords.longitude, nearbyRadius)
       },
-      () => {}
+      () => setGpsError('Location access denied. Enable it in browser settings.')
     )
   }
 
+  // ── Products ──
   const fetchProducts = async (
-    category = activeCategory, q = search, p = page,
-    sort = sortBy, min = minPrice, max = maxPrice, city = selectedCity
+    category = activeCategory,
+    q = search,
+    p = page,
+    sort = sortBy,
+    min = minPrice,
+    max = maxPrice,
+    city = selectedLocation.city ?? '',
+    locality = activeLocalityChip ?? selectedLocation.locality ?? '',
   ) => {
     try {
       setLoading(true)
       const [field, order] = sort.split('_')
       let url = `/products?page=${p}&limit=20&sortBy=${field}&order=${order}`
-      if (category) url += '&category=' + category
-      if (q)        url += '&search='   + encodeURIComponent(q)
-      if (min)      url += '&minPrice=' + min
-      if (max)      url += '&maxPrice=' + max
+      if (category) url += '&category='  + category
+      if (q)        url += '&search='    + encodeURIComponent(q)
+      if (min)      url += '&minPrice='  + min
+      if (max)      url += '&maxPrice='  + max
       if (city && city !== 'All India') url += '&city=' + encodeURIComponent(city)
+      if (locality) url += '&locality='  + encodeURIComponent(locality)
       const res = await api.get(url)
       setProducts(res.data.products)
       setTotalPages(res.data.pagination.totalPages)
@@ -148,27 +203,50 @@ function HomeContent() {
     finally { setLoading(false) }
   }
 
-  const handleCitySelect = (city: string) => {
-    setSelectedCity(city)
-    setShowCities(false)
+  // ── Location change from LocationSelector ──
+  const handleLocationChange = (loc: SelectedLocation) => {
+    setSelectedLocation(loc)
+    setActiveLocalityChip(null)
+    setPage(1)
+    fetchProducts(
+      activeCategory, search, 1, sortBy, minPrice, maxPrice,
+      loc.city ?? '', loc.locality ?? '',
+    )
     const params = new URLSearchParams()
     if (search.trim()) params.set('search', search.trim())
-    if (city !== 'All India') params.set('city', city)
+    if (loc.city && loc.city !== 'All India') params.set('city', loc.city)
+    if (loc.locality) params.set('locality', loc.locality)
     router.push(params.toString() ? '/?' + params.toString() : '/')
   }
 
+  // ── Locality chip ──
+  const handleLocalityChip = (locality: string) => {
+    const next = activeLocalityChip === locality ? null : locality
+    setActiveLocalityChip(next)
+    setPage(1)
+    fetchProducts(
+      activeCategory, search, 1, sortBy, minPrice, maxPrice,
+      selectedLocation.city ?? '', next ?? selectedLocation.locality ?? '',
+    )
+  }
+
+  // ── Search ──
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     const params = new URLSearchParams()
     if (search.trim()) params.set('search', search.trim())
-    if (selectedCity !== 'All India') params.set('city', selectedCity)
+    if (selectedLocation.city && selectedLocation.city !== 'All India')
+      params.set('city', selectedLocation.city)
+    if (selectedLocation.locality) params.set('locality', selectedLocation.locality)
     router.push(params.toString() ? '/?' + params.toString() : '/')
   }
 
+  // ── Category ──
   const handleCategoryClick = (slug: string) => {
     router.push(activeCategory === slug ? '/' : '/?category=' + slug)
   }
 
+  // ── Favorites toggle ──
   const handleToggleFavorite = async (e: React.MouseEvent, productId: string) => {
     e.preventDefault()
     if (!isLoggedIn) { window.location.href = '/login'; return }
@@ -182,9 +260,10 @@ function HomeContent() {
     } catch { /* ignore */ }
   }
 
+  // ── Filters ──
   const applyFilters = () => {
     setPage(1)
-    fetchProducts(activeCategory, search, 1, sortBy, minPrice, maxPrice, selectedCity)
+    fetchProducts(activeCategory, search, 1, sortBy, minPrice, maxPrice)
     setShowFilters(false)
   }
 
@@ -193,74 +272,72 @@ function HomeContent() {
     setMinPrice('')
     setMaxPrice('')
     setPage(1)
-    fetchProducts(activeCategory, search, 1, 'createdAt_desc', '', '', selectedCity)
+    fetchProducts(activeCategory, search, 1, 'createdAt_desc', '', '')
     setShowFilters(false)
   }
 
+  // ── Pagination ──
   const goToPage = (p: number) => {
     setPage(p)
-    fetchProducts(activeCategory, search, p, sortBy, minPrice, maxPrice, selectedCity)
+    fetchProducts(activeCategory, search, p, sortBy, minPrice, maxPrice)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const activeCategoryData = categories.find(c => c.slug === activeCategory)
-    || categories.flatMap(c => c.children).find(c => c.slug === activeCategory)
+  const activeCategoryData =
+    categories.find(c => c.slug === activeCategory) ||
+    categories.flatMap(c => c.children).find(c => c.slug === activeCategory)
+
+  // ── Listings heading ──
+  const listingsHeading = (() => {
+    const loc = activeLocalityChip ?? selectedLocation.locality
+    if (loc) return `Listings in ${loc}`
+    if (selectedLocation.city) return `Listings in ${selectedLocation.city}`
+    if (selectedLocation.state) return `Listings in ${selectedLocation.state}`
+    if (activeCategory && activeCategoryData) return activeCategoryData.name + ' Listings'
+    return 'Discover Products'
+  })()
 
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
 
-      {/* Hero */}
+      {/* ── Hero ── */}
       <div className="bg-gradient-to-br from-orange-500 via-orange-500 to-orange-600 px-4 py-16 sm:py-20">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">Buy and Sell Locally</h1>
-          <p className="text-orange-100 text-lg mb-8 leading-relaxed font-medium">Buy New, Sell Used. All in One Place</p>
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
-            <div className="flex w-full rounded-2xl border border-white/30 bg-white shadow-lg focus-within:ring-2 focus-within:ring-white/50 transition-all" style={{overflow: 'visible'}}>
+          <p className="text-orange-100 text-lg mb-8 leading-relaxed font-medium">
+            Buy New, Sell Used. All in One Place
+          </p>
 
-              {/* City Dropdown */}
-              <div className="relative city-dropdown flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setShowCities(!showCities) }}
-                  className="flex items-center gap-1.5 px-4 py-3.5 border-r border-gray-200 rounded-l-2xl bg-white hover:bg-slate-50 transition-colors min-w-fit h-full"
-                >
-                  <MapPin className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700 font-medium max-w-24 truncate">{selectedCity}</span>
-                  <ChevronDown className={"w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 " + (showCities ? 'rotate-180' : '')} />
-                </button>
-                {showCities && (
-                  <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 z-[200] w-48 py-1 max-h-64 overflow-y-auto">
-                    <p className="text-xs text-gray-400 px-3 py-2 font-semibold uppercase tracking-wider border-b border-gray-50">Select City</p>
-                    {CITIES.map((city) => (
-                      <button
-                        key={city}
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); handleCitySelect(city) }}
-                        className={"w-full text-left px-3 py-2.5 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 flex items-center gap-2 " + (selectedCity === city ? 'text-orange-500 font-semibold bg-orange-50' : 'text-gray-600')}
-                      >
-                        <span>{city === 'All India' ? '🌍' : '📍'}</span>
-                        <span>{city}</span>
-                        {selectedCity === city && <span className="ml-auto text-orange-500">✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+          {/* LocationSelector — replaces old city dropdown */}
+          <div className="mb-3 max-w-3xl mx-auto">
+            <LocationSelector
+              value={selectedLocation}
+              onChange={handleLocationChange}
+            />
+          </div>
 
-              {/* Search Input */}
+          {/* Search bar */}
+          <form onSubmit={handleSearch} className="flex gap-3">
+            <div className="flex w-full rounded-2xl border border-white/30 bg-white shadow-lg
+                            focus-within:ring-2 focus-within:ring-white/50 transition-all overflow-hidden">
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search phones, cars, furniture..."
-                className="flex-1 px-4 py-3.5 text-slate-900 text-sm focus:outline-none bg-white rounded-none"
+                placeholder={
+                  (activeLocalityChip ?? selectedLocation.locality)
+                    ? `Search in ${activeLocalityChip ?? selectedLocation.locality}…`
+                    : selectedLocation.city
+                    ? `Search in ${selectedLocation.city}…`
+                    : 'Search phones, cars, furniture…'
+                }
+                className="flex-1 px-4 py-3.5 text-slate-900 text-sm focus:outline-none bg-white"
               />
-
-              {/* Search Button */}
               <button
                 type="submit"
-                className="px-6 bg-white hover:bg-slate-50 text-orange-500 font-semibold transition-colors flex items-center gap-2 flex-shrink-0 rounded-r-2xl border-l border-gray-200"
+                className="px-6 bg-white hover:bg-slate-50 text-orange-500 font-semibold transition-colors
+                           flex items-center gap-2 flex-shrink-0 border-l border-gray-200"
               >
                 <Search className="w-4 h-4" />
                 <span className="hidden sm:block text-gray-700">Search</span>
@@ -273,12 +350,17 @@ function HomeContent() {
             <button
               type="button"
               onClick={() => document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' })}
-              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors border border-white/30"
+              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5
+                         rounded-xl text-sm font-semibold transition-colors border border-white/30"
             >
               <ShoppingBag className="w-4 h-4" />
               Browse Products
             </button>
-            <Link href="/products/new" className="flex items-center gap-2 bg-white text-orange-600 hover:bg-orange-50 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-md">
+            <Link
+              href="/products/new"
+              className="flex items-center gap-2 bg-white text-orange-600 hover:bg-orange-50 px-5 py-2.5
+                         rounded-xl text-sm font-semibold transition-colors shadow-md"
+            >
               <Plus className="w-4 h-4" />
               Start Selling
             </Link>
@@ -286,7 +368,7 @@ function HomeContent() {
         </div>
       </div>
 
-      {/* Categories */}
+      {/* ── Categories ── */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-4">
@@ -301,7 +383,11 @@ function HomeContent() {
               <button
                 key={cat.slug}
                 onClick={() => handleCategoryClick(cat.slug)}
-                className={"flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all cursor-pointer " + (activeCategory === cat.slug ? 'bg-orange-50 text-orange-600 scale-105' : 'bg-slate-50 text-slate-700 hover:bg-orange-50 hover:text-orange-500')}
+                className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all cursor-pointer ${
+                  activeCategory === cat.slug
+                    ? 'bg-orange-50 text-orange-600 scale-105'
+                    : 'bg-slate-50 text-slate-700 hover:bg-orange-50 hover:text-orange-500'
+                }`}
               >
                 <span className="text-2xl">{cat.icon}</span>
                 <span className="text-xs font-medium text-center leading-tight">{cat.name.split(' ')[0]}</span>
@@ -309,7 +395,6 @@ function HomeContent() {
             ))}
           </div>
 
-          {/* Active category filter badge */}
           {activeCategory && activeCategoryData && (
             <div className="mt-4 inline-flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-xl border border-orange-200">
               <span className="text-sm font-medium text-orange-900">
@@ -321,8 +406,7 @@ function HomeContent() {
         </div>
       </div>
 
-
-      {/* Near You Section */}
+      {/* ── Products Near You ── */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -337,8 +421,15 @@ function HomeContent() {
             </div>
             <div className="flex items-center gap-2">
               {showNearby && (
-                <select value={nearbyRadius} onChange={e => { setNearbyRadius(Number(e.target.value)); if (userLat && userLng) fetchNearby(userLat, userLng, Number(e.target.value)) }}
-                  className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-orange-500">
+                <select
+                  value={nearbyRadius}
+                  onChange={e => {
+                    const r = Number(e.target.value)
+                    setNearbyRadius(r)
+                    if (userLat && userLng) fetchNearby(userLat, userLng, r)
+                  }}
+                  className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-orange-500"
+                >
                   <option value={5}>Within 5 km</option>
                   <option value={10}>Within 10 km</option>
                   <option value={25}>Within 25 km</option>
@@ -346,13 +437,25 @@ function HomeContent() {
                   <option value={100}>Within 100 km</option>
                 </select>
               )}
-              <button onClick={handleDetectLocation}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${showNearby ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100'}`}>
+              <button
+                onClick={handleDetectLocation}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  showNearby
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100'
+                }`}
+              >
                 <Navigation className="w-4 h-4" />
                 {showNearby ? 'Refresh' : 'Detect Location'}
               </button>
             </div>
           </div>
+
+          {gpsError && (
+            <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2">
+              ⚠️ {gpsError}
+            </p>
+          )}
 
           {showNearby && (
             <div className="mt-4">
@@ -371,18 +474,30 @@ function HomeContent() {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   {nearbyProducts.map((product: any) => (
-                    <Link key={product.id} href={'/products/' + product.id}
-                      className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-md transition-shadow border border-gray-100">
+                    <Link
+                      key={product.id}
+                      href={'/products/' + product.id}
+                      className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-md transition-shadow border border-gray-100"
+                    >
                       <div className="h-32 bg-gray-100 overflow-hidden">
                         {product.images.length > 0 ? (
-                          <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" onError={(e: any) => { e.target.src = '/placeholder.png' }} />
+                          <img
+                            src={product.images[0]}
+                            alt={product.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e: any) => { e.target.src = '/placeholder.png' }}
+                          />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center"><MapPin className="w-8 h-8 text-gray-300" /></div>
+                          <div className="w-full h-full flex items-center justify-center">
+                            <MapPin className="w-8 h-8 text-gray-300" />
+                          </div>
                         )}
                       </div>
                       <div className="p-2">
                         <p className="font-bold text-gray-900 text-sm">Rs.{product.price.toLocaleString('en-IN')}</p>
                         <p className="text-gray-600 text-xs truncate mt-0.5">{product.title}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{formatLocation(product)}</p>
                         <div className="flex items-center gap-1 mt-1">
                           <Navigation className="w-3 h-3 text-orange-400" />
                           <span className="text-xs text-orange-500 font-medium">{product.distance?.toFixed(1)} km away</span>
@@ -397,57 +512,79 @@ function HomeContent() {
         </div>
       </div>
 
-      {/* Listings */}
+      {/* ── Listings ── */}
       <div id="listings-section" className="max-w-7xl mx-auto px-4 py-8 pb-10">
 
-        {/* Header row with sort/filter */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-slate-900">
-            {activeCategory && activeCategoryData ? activeCategoryData.name + ' Listings' : 'Discover Products'}
+            {listingsHeading}
             {!loading && <span className="text-sm text-gray-400 font-normal ml-2">({total})</span>}
           </h2>
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowTrending(t => !t)}
-              className={"flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-colors " + (showTrending ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300')}>
+            <button
+              onClick={() => setShowTrending(t => !t)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-colors ${
+                showTrending
+                  ? 'bg-orange-500 text-white border-orange-500'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+              }`}
+            >
               <Flame className="w-4 h-4" />
               Trending
-              <span className={"text-xs px-1.5 py-0.5 rounded-full " + (showTrending ? 'bg-orange-400 text-white' : 'bg-orange-100 text-orange-600')}>Live</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${showTrending ? 'bg-orange-400 text-white' : 'bg-orange-100 text-orange-600'}`}>Live</span>
             </button>
-            <button onClick={() => setShowFilters(f => !f)}
-              className={"flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-colors " + (showFilters ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300')}>
+            <button
+              onClick={() => setShowFilters(f => !f)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-colors ${
+                showFilters
+                  ? 'bg-orange-500 text-white border-orange-500'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+              }`}
+            >
               <SlidersHorizontal className="w-4 h-4" />
               Filter & Sort
             </button>
           </div>
         </div>
 
-        {/* Trending panel */}
         {showTrending && (
           <div className="mb-4 rounded-2xl overflow-hidden border border-orange-100">
             <TrendingProducts onClose={() => setShowTrending(false)} />
           </div>
         )}
 
-        {/* Filter panel */}
         {showFilters && (
           <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Sort By</label>
-                <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white">
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white"
+                >
                   {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Min Price (Rs.)</label>
-                <input type="number" value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="0"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" />
+                <input
+                  type="number"
+                  value={minPrice}
+                  onChange={e => setMinPrice(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500"
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Max Price (Rs.)</label>
-                <input type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="Any"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" />
+                <input
+                  type="number"
+                  value={maxPrice}
+                  onChange={e => setMaxPrice(e.target.value)}
+                  placeholder="Any"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500"
+                />
               </div>
               <div className="flex items-end gap-2">
                 <button onClick={applyFilters} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-xl text-sm font-medium transition-colors">Apply</button>
@@ -474,7 +611,7 @@ function HomeContent() {
             <div className="mx-auto mb-4 max-w-md rounded-3xl border border-dashed border-slate-200 bg-white p-8 shadow-sm">
               <ShoppingBag className="w-12 h-12 text-orange-300 mx-auto mb-3" />
               <p className="text-slate-700 text-lg font-semibold mb-1">No listings found</p>
-              <p className="text-slate-400 text-sm mb-5">Buy great products or start selling your own items.</p>
+              <p className="text-slate-400 text-sm mb-5">Try a different location or search term.</p>
               <div className="flex gap-3 justify-center">
                 <Link href="/" className="inline-flex items-center gap-2 border border-orange-500 text-orange-500 px-5 py-2.5 rounded-xl font-medium hover:bg-orange-50 transition-colors text-sm">
                   <ShoppingBag className="w-4 h-4" />
@@ -490,12 +627,18 @@ function HomeContent() {
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {products.map(product => (
-                <Link key={product.id} href={"/products/" + product.id}
-                  className="bg-white rounded-[24px] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer relative border border-transparent hover:border-slate-200">
-                  <button onClick={e => handleToggleFavorite(e, product.id)}
-                    className="absolute top-3 right-3 z-10 bg-white/95 rounded-full p-2 shadow-sm backdrop-blur-sm">
-                    <Heart className={"w-4 h-4 " + (favorites.has(product.id) ? 'fill-red-500 text-red-500' : 'text-slate-400')} />
+              {products.map((product: any) => (
+                <Link
+                  key={product.id}
+                  href={'/products/' + product.id}
+                  className="bg-white rounded-[24px] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200
+                             transform hover:-translate-y-0.5 cursor-pointer relative border border-transparent hover:border-slate-200"
+                >
+                  <button
+                    onClick={e => handleToggleFavorite(e, product.id)}
+                    className="absolute top-3 right-3 z-10 bg-white/95 rounded-full p-2 shadow-sm backdrop-blur-sm"
+                  >
+                    <Heart className={`w-4 h-4 ${favorites.has(product.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} />
                   </button>
                   <div className="bg-slate-100 h-48 w-full flex items-center justify-center overflow-hidden">
                     {product.images.length > 0 ? (
@@ -510,7 +653,8 @@ function HomeContent() {
                     <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center gap-1 text-xs text-slate-400">
                         <MapPin className="w-3 h-3" />
-                        <span>{product.city}</span>
+                        {/* Phase 3: shows "Wakad, Pune" instead of just "Pune" */}
+                        <span>{formatLocation(product)}</span>
                       </div>
                       <span className="text-xs text-orange-500 font-medium">Buy Now →</span>
                     </div>
@@ -522,8 +666,11 @@ function HomeContent() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-8">
-                <button onClick={() => goToPage(page - 1)} disabled={page === 1}
-                  className="p-2 rounded-xl border border-gray-200 disabled:opacity-40 hover:border-orange-300 transition-colors">
+                <button
+                  onClick={() => goToPage(page - 1)}
+                  disabled={page === 1}
+                  className="p-2 rounded-xl border border-gray-200 disabled:opacity-40 hover:border-orange-300 transition-colors"
+                >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -533,16 +680,26 @@ function HomeContent() {
                     acc.push(p)
                     return acc
                   }, [])
-                  .map((p, i) => p === '...' ? (
-                    <span key={`ellipsis-${i}`} className="px-2 text-gray-400">...</span>
-                  ) : (
-                    <button key={`page-${p}`} onClick={() => goToPage(p as number)}
-                      className={"w-9 h-9 rounded-xl text-sm font-medium transition-colors " + (page === p ? 'bg-orange-500 text-white' : 'border border-gray-200 text-gray-600 hover:border-orange-300')}>
-                      {p}
-                    </button>
-                  ))}
-                <button onClick={() => goToPage(page + 1)} disabled={page === totalPages}
-                  className="p-2 rounded-xl border border-gray-200 disabled:opacity-40 hover:border-orange-300 transition-colors">
+                  .map((p, i) =>
+                    p === '...' ? (
+                      <span key={`ellipsis-${i}`} className="px-2 text-gray-400">...</span>
+                    ) : (
+                      <button
+                        key={`page-${p}`}
+                        onClick={() => goToPage(p as number)}
+                        className={`w-9 h-9 rounded-xl text-sm font-medium transition-colors ${
+                          page === p ? 'bg-orange-500 text-white' : 'border border-gray-200 text-gray-600 hover:border-orange-300'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                <button
+                  onClick={() => goToPage(page + 1)}
+                  disabled={page === totalPages}
+                  className="p-2 rounded-xl border border-gray-200 disabled:opacity-40 hover:border-orange-300 transition-colors"
+                >
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -553,6 +710,8 @@ function HomeContent() {
     </div>
   )
 }
+
+// ─── Export ───────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   return (

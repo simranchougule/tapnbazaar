@@ -18,6 +18,8 @@ import favoriteRoutes     from './routes/favorite.routes'
 import chatRoutes         from './routes/chat.routes'
 import notificationRoutes from './routes/notification.routes'
 import adminRoutes        from './routes/admin.routes'
+import locationRoutes     from './routes/location.routes'
+import reportRoutes       from './routes/report.routes'
 
 const app        = express()
 const httpServer = createServer(app)
@@ -49,6 +51,8 @@ app.use('/api/favorites',     favoriteRoutes)
 app.use('/api/chats',         chatRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/admin',         adminRoutes)
+app.use('/api/locations',     locationRoutes)
+app.use('/api/reports',       reportRoutes)
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'TapnBazaar API is running!', timestamp: new Date().toISOString() })

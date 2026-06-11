@@ -16,6 +16,8 @@ interface User {
   state?: string
   isVerified: boolean
   isAdmin?: boolean
+  phoneVerified?: boolean
+  emailVerified?: boolean
 }
 
 interface AuthStore {
