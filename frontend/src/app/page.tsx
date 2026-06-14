@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -49,6 +50,26 @@ interface Category    { id: string; name: string; slug: string; icon: string; ch
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function relativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins  = Math.floor(diff / 60000)
+  if (mins < 60)   return mins <= 1 ? 'Just now' : `${mins} mins ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs  < 24)   return `${hrs} hr${hrs > 1 ? 's' : ''} ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 30)   return `${days} day${days > 1 ? 's' : ''} ago`
+  const months = Math.floor(days / 30)
+  return `${months} month${months > 1 ? 's' : ''} ago`
+}
+
+const CONDITION_CHIP: Record<string, { label: string; cls: string }> = {
+  NEW:      { label: 'Brand New', cls: 'bg-green-100 text-green-700' },
+  LIKE_NEW: { label: 'Like New',  cls: 'bg-emerald-100 text-emerald-700' },
+  GOOD:     { label: 'Good',      cls: 'bg-orange-100 text-orange-700' },
+  FAIR:     { label: 'Fair',      cls: 'bg-yellow-100 text-yellow-700' },
+  POOR:     { label: 'Poor',      cls: 'bg-gray-100 text-gray-500' },
+}
+
 function formatLocation(product: any): string {
   const parts: string[] = []
   if (product.locality) parts.push(product.locality)
@@ -75,9 +96,10 @@ function HomeContent() {
   const [favorites, setFavorites]   = useState<Set<string>>(new Set())
   const [showFilters, setShowFilters]   = useState(false)
   const [showTrending, setShowTrending] = useState(false)
-  const [sortBy, setSortBy]     = useState('createdAt_desc')
-  const [minPrice, setMinPrice] = useState('')
-  const [maxPrice, setMaxPrice] = useState('')
+  const [sortBy, setSortBy]       = useState('createdAt_desc')
+  const [minPrice, setMinPrice]   = useState('')
+  const [maxPrice, setMaxPrice]   = useState('')
+  const [condition, setCondition] = useState('')
   const [page, setPage]             = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal]           = useState(0)
@@ -184,17 +206,19 @@ function HomeContent() {
     max = maxPrice,
     city = selectedLocation.city ?? '',
     locality = activeLocalityChip ?? selectedLocation.locality ?? '',
+    cond = condition,
   ) => {
     try {
       setLoading(true)
       const [field, order] = sort.split('_')
       let url = `/products?page=${p}&limit=20&sortBy=${field}&order=${order}`
-      if (category) url += '&category='  + category
-      if (q)        url += '&search='    + encodeURIComponent(q)
-      if (min)      url += '&minPrice='  + min
-      if (max)      url += '&maxPrice='  + max
+      if (category)  url += '&category='  + category
+      if (q)         url += '&search='    + encodeURIComponent(q)
+      if (min)       url += '&minPrice='  + min
+      if (max)       url += '&maxPrice='  + max
       if (city && city !== 'All India') url += '&city=' + encodeURIComponent(city)
-      if (locality) url += '&locality='  + encodeURIComponent(locality)
+      if (locality)  url += '&locality='  + encodeURIComponent(locality)
+      if (cond)      url += '&condition=' + cond
       const res = await api.get(url)
       setProducts(res.data.products)
       setTotalPages(res.data.pagination.totalPages)
@@ -263,7 +287,7 @@ function HomeContent() {
   // ── Filters ──
   const applyFilters = () => {
     setPage(1)
-    fetchProducts(activeCategory, search, 1, sortBy, minPrice, maxPrice)
+    fetchProducts(activeCategory, search, 1, sortBy, minPrice, maxPrice, selectedLocation.city ?? '', activeLocalityChip ?? selectedLocation.locality ?? '', condition)
     setShowFilters(false)
   }
 
@@ -271,8 +295,9 @@ function HomeContent() {
     setSortBy('createdAt_desc')
     setMinPrice('')
     setMaxPrice('')
+    setCondition('')
     setPage(1)
-    fetchProducts(activeCategory, search, 1, 'createdAt_desc', '', '')
+    fetchProducts(activeCategory, search, 1, 'createdAt_desc', '', '', selectedLocation.city ?? '', activeLocalityChip ?? selectedLocation.locality ?? '', '')
     setShowFilters(false)
   }
 
@@ -409,46 +434,64 @@ function HomeContent() {
       {/* ── Products Near You ── */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
-                <Navigation className="w-5 h-5 text-orange-500" />
-              </div>
-              <div>
-                <h2 className="font-bold text-gray-800">Products Near You</h2>
-                <p className="text-xs text-gray-400">Find listings close to your location</p>
-              </div>
+          {/* Header row: icon+title on left, radius select on right (desktop) */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 flex-shrink-0 bg-orange-50 rounded-xl flex items-center justify-center">
+              <Navigation className="w-5 h-5 text-orange-500" />
             </div>
-            <div className="flex items-center gap-2">
-              {showNearby && (
-                <select
-                  value={nearbyRadius}
-                  onChange={e => {
-                    const r = Number(e.target.value)
-                    setNearbyRadius(r)
-                    if (userLat && userLng) fetchNearby(userLat, userLng, r)
-                  }}
-                  className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-orange-500"
-                >
-                  <option value={5}>Within 5 km</option>
-                  <option value={10}>Within 10 km</option>
-                  <option value={25}>Within 25 km</option>
-                  <option value={50}>Within 50 km</option>
-                  <option value={100}>Within 100 km</option>
-                </select>
-              )}
-              <button
-                onClick={handleDetectLocation}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                  showNearby
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100'
-                }`}
+            <div className="flex-1 min-w-0">
+              <h2 className="font-bold text-gray-800">Products Near You</h2>
+              <p className="text-xs text-gray-400">Find listings close to your location</p>
+            </div>
+            {showNearby && (
+              <select
+                value={nearbyRadius}
+                onChange={e => {
+                  const r = Number(e.target.value)
+                  setNearbyRadius(r)
+                  if (userLat && userLng) fetchNearby(userLat, userLng, r)
+                }}
+                className="hidden sm:block px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-orange-500 flex-shrink-0"
               >
-                <Navigation className="w-4 h-4" />
-                {showNearby ? 'Refresh' : 'Detect Location'}
-              </button>
-            </div>
+                <option value={5}>Within 5 km</option>
+                <option value={10}>Within 10 km</option>
+                <option value={25}>Within 25 km</option>
+                <option value={50}>Within 50 km</option>
+                <option value={100}>Within 100 km</option>
+              </select>
+            )}
+          </div>
+
+          {/* On mobile: radius select + detect button stacked below header */}
+          <div className="mt-3 flex gap-2">
+            {showNearby && (
+              <select
+                value={nearbyRadius}
+                onChange={e => {
+                  const r = Number(e.target.value)
+                  setNearbyRadius(r)
+                  if (userLat && userLng) fetchNearby(userLat, userLng, r)
+                }}
+                className="sm:hidden flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-orange-500"
+              >
+                <option value={5}>Within 5 km</option>
+                <option value={10}>Within 10 km</option>
+                <option value={25}>Within 25 km</option>
+                <option value={50}>Within 50 km</option>
+                <option value={100}>Within 100 km</option>
+              </select>
+            )}
+            <button
+              onClick={handleDetectLocation}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                showNearby
+                  ? 'bg-orange-500 text-white flex-shrink-0'
+                  : 'w-full bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100'
+              }`}
+            >
+              <Navigation className="w-4 h-4" />
+              {showNearby ? 'Refresh' : 'Detect Location'}
+            </button>
           </div>
 
           {gpsError && (
@@ -479,15 +522,9 @@ function HomeContent() {
                       href={'/products/' + product.id}
                       className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-md transition-shadow border border-gray-100"
                     >
-                      <div className="h-32 bg-gray-100 overflow-hidden">
+                      <div className="relative h-32 bg-gray-100 overflow-hidden">
                         {product.images.length > 0 ? (
-                          <img
-                            src={product.images[0]}
-                            alt={product.title}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                            onError={(e: any) => { e.target.src = '/placeholder.png' }}
-                          />
+                          <Image src={product.images[0]} alt={product.title} fill className="object-cover" sizes="200px" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <MapPin className="w-8 h-8 text-gray-300" />
@@ -515,7 +552,7 @@ function HomeContent() {
       {/* ── Listings ── */}
       <div id="listings-section" className="max-w-7xl mx-auto px-4 py-8 pb-10">
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <h2 className="text-lg font-semibold text-slate-900">
             {listingsHeading}
             {!loading && <span className="text-sm text-gray-400 font-normal ml-2">({total})</span>}
@@ -523,26 +560,26 @@ function HomeContent() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowTrending(t => !t)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${
                 showTrending
                   ? 'bg-orange-500 text-white border-orange-500'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
               }`}
             >
-              <Flame className="w-4 h-4" />
-              Trending
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${showTrending ? 'bg-orange-400 text-white' : 'bg-orange-100 text-orange-600'}`}>Live</span>
+              <Flame className="w-4 h-4 flex-shrink-0" />
+              <span>Trending</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${showTrending ? 'bg-orange-400 text-white' : 'bg-orange-100 text-orange-600'}`}>Live</span>
             </button>
             <button
               onClick={() => setShowFilters(f => !f)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${
                 showFilters
                   ? 'bg-orange-500 text-white border-orange-500'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
               }`}
             >
-              <SlidersHorizontal className="w-4 h-4" />
-              Filter & Sort
+              <SlidersHorizontal className="w-4 h-4 flex-shrink-0" />
+              <span>Filter & Sort</span>
             </button>
           </div>
         </div>
@@ -555,7 +592,7 @@ function HomeContent() {
 
         {showFilters && (
           <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Sort By</label>
                 <select
@@ -564,6 +601,21 @@ function HomeContent() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white"
                 >
                   {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Condition</label>
+                <select
+                  value={condition}
+                  onChange={e => setCondition(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white"
+                >
+                  <option value="">All Conditions</option>
+                  <option value="NEW">Brand New</option>
+                  <option value="LIKE_NEW">Like New</option>
+                  <option value="GOOD">Good</option>
+                  <option value="FAIR">Fair</option>
+                  <option value="POOR">Poor</option>
                 </select>
               </div>
               <div>
@@ -586,7 +638,7 @@ function HomeContent() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500"
                 />
               </div>
-              <div className="flex items-end gap-2">
+              <div className="flex items-end gap-2 col-span-2 sm:col-span-1">
                 <button onClick={applyFilters} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-xl text-sm font-medium transition-colors">Apply</button>
                 <button onClick={resetFilters} className="flex-1 border border-gray-200 text-gray-600 py-2 rounded-xl text-sm hover:border-gray-300 transition-colors">Reset</button>
               </div>
@@ -640,9 +692,9 @@ function HomeContent() {
                   >
                     <Heart className={`w-4 h-4 ${favorites.has(product.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} />
                   </button>
-                  <div className="bg-slate-100 h-48 w-full flex items-center justify-center overflow-hidden">
+                  <div className="relative bg-slate-100 h-48 w-full flex items-center justify-center overflow-hidden">
                     {product.images.length > 0 ? (
-                      <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
+                      <Image src={product.images[0]} alt={product.title} fill className="object-cover" sizes="300px" />
                     ) : (
                       <Tag className="w-12 h-12 text-slate-300" />
                     )}
@@ -650,13 +702,17 @@ function HomeContent() {
                   <div className="p-4">
                     <p className="font-semibold text-slate-900 text-lg">Rs.{product.price.toLocaleString('en-IN')}</p>
                     <p className="text-slate-600 text-sm truncate mt-2">{product.title}</p>
-                    <div className="flex items-center justify-between mt-3">
-                      <div className="flex items-center gap-1 text-xs text-slate-400">
-                        <MapPin className="w-3 h-3" />
-                        {/* Phase 3: shows "Wakad, Pune" instead of just "Pune" */}
-                        <span>{formatLocation(product)}</span>
-                      </div>
-                      <span className="text-xs text-orange-500 font-medium">Buy Now →</span>
+                    <div className="flex items-center gap-1 text-xs text-slate-400 mt-2">
+                      <MapPin className="w-3 h-3" />
+                      <span className="truncate">{formatLocation(product)}</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      {CONDITION_CHIP[product.condition] && (
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${CONDITION_CHIP[product.condition].cls}`}>
+                          {CONDITION_CHIP[product.condition].label}
+                        </span>
+                      )}
+                      <span className="text-xs text-slate-400 ml-auto">{relativeTime(product.createdAt)}</span>
                     </div>
                   </div>
                 </Link>

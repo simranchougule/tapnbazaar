@@ -1,6 +1,6 @@
 'use client'
-import Image from 'next/image'
 
+import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -30,11 +30,11 @@ export default function ChatRoomPage() {
   const { chatId }  = useParams()
   const router      = useRouter()
   const { user, isLoggedIn, loadFromStorage } = useAuthStore()
-  const [chat, setChat]       = useState<ChatData | null>(null)
+  const [chat, setChat]         = useState<ChatData | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
-  const [text, setText]       = useState('')
-  const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
+  const [text, setText]         = useState('')
+  const [loading, setLoading]   = useState(true)
+  const [sending, setSending]   = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { loadFromStorage() }, [])
@@ -61,7 +61,6 @@ export default function ChatRoomPage() {
     }
   }
 
-  // Socket.io setup
   useEffect(() => {
     if (!isLoggedIn) return
     const token = localStorage.getItem('token')
@@ -86,10 +85,8 @@ export default function ChatRoomPage() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!text.trim() || sending) return
-
     const token = localStorage.getItem('token')
     if (!token) return
-
     setSending(true)
     try {
       const socket = getSocket(token)
@@ -142,8 +139,8 @@ export default function ChatRoomPage() {
 
         {chat?.product.images[0] && (
           <Link href={'/products/' + chat.product.id}>
-            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
-              <img src={chat.product.images[0]} alt="" className="w-full h-full object-cover" loading="lazy" onError={(e: any) => { e.target.src = '/placeholder.png' }} />
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
+              <Image src={chat.product.images[0]} alt="" fill className="object-cover" sizes="40px" />
             </div>
           </Link>
         )}

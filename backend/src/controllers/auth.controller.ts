@@ -1,14 +1,10 @@
-// src/controllers/auth.controller.ts
-// This file handles all authentication logic
-// Register, Login, Get current user, Logout
-
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { prisma } from '../lib/prisma'
 import { generateToken } from '../utils/jwt'
 import { AuthRequest } from '../middleware/auth.middleware'
-import { sendEmailVerification, sendOtpEmail } from '../services/emailService'
+import { sendEmailVerification, sendOtpEmail, sendSmsOtp } from '../services/emailService'
 
 const DISPOSABLE_DOMAINS = ['mailinator.com','guerrillamail.com','10minutemail.com','throwam.com','tempmail.com','yopmail.com','sharklasers.com','trashmail.com']
 
@@ -25,32 +21,17 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ success: false, message: 'Please provide a valid email address' }); return
     }
 
-    // Block disposable email domains
     const domain = email.toLowerCase().split('@')[1]
     if (DISPOSABLE_DOMAINS.includes(domain)) {
       res.status(400).json({ success: false, message: 'Disposable email addresses are not allowed' }); return
     }
 
-    // Step 2 — Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    })
-
+    const existingUser = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
     if (existingUser) {
-      res.status(400).json({
-        success: false,
-        message: 'An account with this email already exists',
-      })
-      return
+      res.status(400).json({ success: false, message: 'An account with this email already exists' }); return
     }
 
-    // Step 3 — Hash the password
-    // NEVER store plain text passwords in database
-    // bcrypt turns "mypassword123" into "$2b$10$xyz..." (unreadable)
-    // The 12 means how many times to scramble it — higher = safer but slower
     const hashedPassword = await bcrypt.hash(password, 12)
-
-    // Step 4 — Create the user in database
     const emailVerifyToken = crypto.randomBytes(32).toString('hex')
     const user = await prisma.user.create({
       data: {
@@ -64,175 +45,83 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       },
     })
 
-    // Send verification email (non-blocking)
     sendEmailVerification(user.email, emailVerifyToken).catch(() => {})
 
-    // Step 5 — Generate a JWT token for immediate login after register
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-    })
+    const token = generateToken({ userId: user.id, email: user.email })
 
-    // Step 6 — Send response (never send the password back!)
     res.status(201).json({
       success: true,
       message: 'Account created successfully!',
       token,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        avatar: user.avatar,
-        city: user.city,
-        state: user.state,
-        isVerified: user.isVerified,
-        isAdmin: user.isAdmin,
-        phoneVerified: user.phoneVerified,
-        emailVerified: user.emailVerified,
+        id: user.id, name: user.name, email: user.email, phone: user.phone,
+        avatar: user.avatar, city: user.city, state: user.state,
+        isVerified: user.isVerified, isAdmin: user.isAdmin,
+        phoneVerified: user.phoneVerified, emailVerified: user.emailVerified,
         createdAt: user.createdAt,
       },
     })
   } catch (error) {
     console.error('Register error:', error)
-    res.status(500).json({
-      success: false,
-      message: 'Something went wrong. Please try again.',
-    })
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' })
   }
 }
 
-// ─── LOGIN ───────────────────────────────────────────────────────────────────
-// POST /api/auth/login
-// Logs in existing user and returns a token
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body
-
-    // Step 1 — Check fields provided
     if (!email || !password) {
-      res.status(400).json({
-        success: false,
-        message: 'Please provide email and password',
-      })
-      return
+      res.status(400).json({ success: false, message: 'Please provide email and password' }); return
     }
 
-    // Step 2 — Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    })
-
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
     if (!user) {
-      // Don't say "email not found" — security risk
-      // Always say generic message so hackers can't guess emails
-      res.status(401).json({
-        success: false,
-        message: 'Invalid email or password',
-      })
-      return
+      res.status(401).json({ success: false, message: 'Invalid email or password' }); return
     }
 
-    // Step 3 — Check password
-    // bcrypt compares the plain text with the hashed version
     const isPasswordCorrect = await bcrypt.compare(password, user.password)
-
     if (!isPasswordCorrect) {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid email or password',
-      })
-      return
+      res.status(401).json({ success: false, message: 'Invalid email or password' }); return
     }
 
-    // Step 4 — Generate token
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-    })
+    const token = generateToken({ userId: user.id, email: user.email })
 
-    // Step 5 — Send response
     res.status(200).json({
       success: true,
       message: 'Logged in successfully!',
       token,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        avatar: user.avatar,
-        city: user.city,
-        state: user.state,
-        isVerified: user.isVerified,
-        isAdmin: user.isAdmin,
-        phoneVerified: user.phoneVerified,
-        emailVerified: user.emailVerified,
+        id: user.id, name: user.name, email: user.email, phone: user.phone,
+        avatar: user.avatar, city: user.city, state: user.state,
+        isVerified: user.isVerified, isAdmin: user.isAdmin,
+        phoneVerified: user.phoneVerified, emailVerified: user.emailVerified,
         createdAt: user.createdAt,
       },
     })
   } catch (error) {
     console.error('Login error:', error)
-    res.status(500).json({
-      success: false,
-      message: 'Something went wrong. Please try again.',
-    })
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' })
   }
 }
 
-// ─── GET CURRENT USER ────────────────────────────────────────────────────────
-// GET /api/auth/me
-// Returns the currently logged in user's info
-// This is a PROTECTED route — requires valid token
 export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    // req.user was set by the protect middleware
     const user = await prisma.user.findUnique({
       where: { id: req.user?.userId },
       select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        avatar: true,
-        bio: true,
-        city: true,
-        state: true,
-        isVerified: true,
-        createdAt: true,
-        // Count how many products this user has posted
-        _count: {
-          select: { products: true }
-        }
+        id: true, name: true, email: true, phone: true, avatar: true,
+        bio: true, city: true, state: true, isVerified: true, createdAt: true,
+        _count: { select: { products: true } },
       },
     })
-
-    if (!user) {
-      res.status(404).json({
-        success: false,
-        message: 'User not found',
-      })
-      return
-    }
-
-    res.status(200).json({
-      success: true,
-      user,
-    })
+    if (!user) { res.status(404).json({ success: false, message: 'User not found' }); return }
+    res.status(200).json({ success: true, user })
   } catch (error) {
     console.error('Get me error:', error)
-    res.status(500).json({
-      success: false,
-      message: 'Something went wrong.',
-    })
+    res.status(500).json({ success: false, message: 'Something went wrong.' })
   }
 }
 
-// ─── LOGOUT ──────────────────────────────────────────────────────────────────
-// POST /api/auth/logout
-// JWT tokens can't be truly "deleted" from server side
-// The frontend just deletes the token from localStorage
-// This route just confirms the logout
 export const logout = async (req: Request, res: Response): Promise<void> => {
   res.status(200).json({ success: true, message: 'Logged out successfully!' })
 }
@@ -282,8 +171,6 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
   }
 }
 
-// ─── VERIFY EMAIL ─────────────────────────────────────────────────────────────
-// GET /api/auth/verify-email?token=xxx
 export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.query
@@ -303,8 +190,6 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
   }
 }
 
-// ─── SEND PHONE OTP ───────────────────────────────────────────────────────────
-// POST /api/auth/send-otp  { phone }
 export const sendPhoneOtp = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { phone } = req.body
@@ -313,25 +198,26 @@ export const sendPhoneOtp = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     const otp    = Math.floor(100000 + Math.random() * 900000).toString()
-    const expiry = new Date(Date.now() + 10 * 60 * 1000) // 10 mins
+    const expiry = new Date(Date.now() + 10 * 60 * 1000)
 
     await prisma.user.update({
       where: { id: req.user!.userId },
       data:  { phone, phoneOtp: otp, phoneOtpExpiry: expiry },
     })
 
-    // Send OTP via email (since we don't have an SMS provider configured)
-    const user = await prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true } })
-    if (user) await sendOtpEmail(user.email, otp).catch(() => {})
+    // Try SMS first, fall back to email
+    const smsSent = await sendSmsOtp(phone.replace(/\s/g, ''), otp)
+    if (!smsSent) {
+      const user = await prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true } })
+      if (user) await sendOtpEmail(user.email, otp).catch(() => {})
+    }
 
-    res.status(200).json({ success: true, message: 'OTP sent to your registered email' })
+    res.status(200).json({ success: true, message: smsSent ? 'OTP sent to your phone' : 'OTP sent to your registered email' })
   } catch {
     res.status(500).json({ success: false, message: 'Something went wrong.' })
   }
 }
 
-// ─── VERIFY PHONE OTP ─────────────────────────────────────────────────────────
-// POST /api/auth/verify-otp  { otp }
 export const verifyPhoneOtp = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { otp } = req.body
@@ -355,7 +241,6 @@ export const verifyPhoneOtp = async (req: AuthRequest, res: Response): Promise<v
       data:  { phoneVerified: true, phoneOtp: null, phoneOtpExpiry: null },
     })
 
-    const token = req.headers.authorization?.split(' ')[1] || ''
     res.status(200).json({
       success: true,
       message: 'Phone number verified!',
@@ -371,8 +256,6 @@ export const verifyPhoneOtp = async (req: AuthRequest, res: Response): Promise<v
   }
 }
 
-// ─── CHANGE PASSWORD ──────────────────────────────────────────────────────────
-// PUT /api/auth/change-password
 export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { currentPassword, newPassword } = req.body

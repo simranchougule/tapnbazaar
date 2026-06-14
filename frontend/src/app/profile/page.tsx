@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/authStore'
 import { Product } from '@/types'
 import {
   MapPin, Package, LogOut, Edit, Check, X, ShoppingBag, TrendingUp,
-  Settings, HelpCircle, ChevronRight, Heart, MessageCircle, Bell, ShieldCheck
+  ChevronRight, Heart, MessageCircle, Bell, ShieldCheck
 } from 'lucide-react'
 import Link from 'next/link'
 import { INDIA_STATES } from '@/lib/constants'
@@ -19,33 +19,33 @@ const SIDEBAR_SECTIONS = [
   {
     label: 'My Account',
     items: [
-      { icon: TrendingUp,    label: 'My Listings',   tab: 'listings' },
-      { icon: ShoppingBag,   label: 'My Chats',      tab: 'chats' },
-      { icon: Heart,         label: 'Saved Items',   href: '/favorites' },
-      { icon: Bell,          label: 'Notifications', href: '/notifications' },
+      { icon: TrendingUp,  label: 'My Listings',   tab: 'listings' },
+      { icon: ShoppingBag, label: 'My Chats',      tab: 'chats' },
+      { icon: Heart,       label: 'Saved Items',   href: '/favorites' },
+      { icon: Bell,        label: 'Notifications', href: '/notifications' },
     ],
   },
   {
     label: 'Settings',
     href: '/profile/settings',
     items: [
-      { label: 'Personal Information',    href: '/profile/settings#personal' },
-      { label: 'Change Password',         href: '/profile/settings#password' },
-      { label: 'Notification Preferences',href: '/profile/settings#notifications' },
-      { label: 'Privacy Settings',        href: '/profile/settings#privacy' },
-      { label: 'Language Preferences',    href: '/profile/settings#language' },
-      { label: 'Saved Addresses',         href: '/profile/settings#addresses' },
-      { label: 'Location Preferences',    href: '/profile/settings#location' },
+      { label: 'Personal Information',     href: '/profile/settings#personal' },
+      { label: 'Change Password',          href: '/profile/settings#password' },
+      { label: 'Notification Preferences', href: '/profile/settings#notifications' },
+      { label: 'Privacy Settings',         href: '/profile/settings#privacy' },
+      { label: 'Language Preferences',     href: '/profile/settings#language' },
+      { label: 'Saved Addresses',          href: '/profile/settings#addresses' },
+      { label: 'Location Preferences',     href: '/profile/settings#location' },
     ],
   },
   {
     label: 'Help & Support',
     href: '/profile/help',
     items: [
-      { label: 'FAQs',              href: '/profile/help#faqs' },
-      { label: 'Contact Support',   href: '/profile/help#contact' },
-      { label: 'Report a Problem',  href: '/profile/help#report' },
-      { label: 'Safety Tips',       href: '/profile/help#safety' },
+      { label: 'FAQs',             href: '/profile/help#faqs' },
+      { label: 'Contact Support',  href: '/profile/help#contact' },
+      { label: 'Report a Problem', href: '/profile/help#report' },
+      { label: 'Safety Tips',      href: '/profile/help#safety' },
     ],
   },
 ]
@@ -61,6 +61,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'listings' | 'chats'>('listings')
   const [editForm, setEditForm]   = useState({ name: '', phone: '', city: '', state: '', bio: '' })
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
 
   useEffect(() => { loadFromStorage() }, [])
 
@@ -121,7 +122,6 @@ export default function ProfilePage() {
   }
 
   const soldCount = products.filter(p => p.status === 'SOLD').length
-  const [showVerifyModal, setShowVerifyModal] = useState(false)
 
   if (!user) return null
 
@@ -129,10 +129,28 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-6xl mx-auto px-4 py-6">
+
+        {/* ── Mobile horizontal tabs ── */}
+        <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
+          {[
+            { tab: 'listings' as const, label: 'My Listings' },
+            { tab: 'chats' as const,    label: 'My Chats' },
+          ].map(item => (
+            <button key={item.tab} onClick={() => setActiveTab(item.tab)}
+              className={'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ' +
+                (activeTab === item.tab ? 'bg-orange-500 text-white' : 'bg-white text-gray-600 border border-gray-200')}>
+              {item.label}
+            </button>
+          ))}
+          <Link href="/favorites" className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold bg-white text-gray-600 border border-gray-200">Saved</Link>
+          <Link href="/notifications" className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold bg-white text-gray-600 border border-gray-200">Notifications</Link>
+          <Link href="/profile/settings" className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold bg-white text-gray-600 border border-gray-200">Settings</Link>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-5">
 
-          {/* ── Sidebar ── */}
-          <aside className="lg:w-72 flex-shrink-0 space-y-3">
+          {/* ── Sidebar (desktop only) ── */}
+          <aside className="hidden lg:block lg:w-72 flex-shrink-0 space-y-3">
 
             {/* Profile card */}
             <div className="bg-white rounded-2xl p-5 shadow-sm">
@@ -207,9 +225,9 @@ export default function ProfilePage() {
               {/* Stats */}
               <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-gray-100">
                 {[
-                  { value: products.length,           label: 'Listed' },
-                  { value: soldCount,                  label: 'Sold' },
-                  { value: favCount,                   label: 'Saved' },
+                  { value: products.length,            label: 'Listed' },
+                  { value: soldCount,                   label: 'Sold' },
+                  { value: favCount,                    label: 'Saved' },
                   { value: products.length - soldCount, label: 'Active', orange: true },
                 ].map(s => (
                   <div key={s.label} className="text-center">
@@ -241,35 +259,11 @@ export default function ProfilePage() {
                   </span>
                 )}
               </div>
-
-              {/* Trust badges */}
-              <div className="flex gap-2 mt-3 flex-wrap">
-                {user.phoneVerified ? (
-                  <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 border border-green-100 px-2 py-1 rounded-full">
-                    <ShieldCheck className="w-3 h-3" /> Phone Verified
-                  </span>
-                ) : (
-                  <button onClick={() => setShowVerifyModal(true)}
-                    className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full hover:bg-amber-100 transition-colors">
-                    <ShieldCheck className="w-3 h-3" /> Verify Phone
-                  </button>
-                )}
-                {user.emailVerified ? (
-                  <span className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 border border-blue-100 px-2 py-1 rounded-full">
-                    <ShieldCheck className="w-3 h-3" /> Email Verified
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 border border-gray-200 px-2 py-1 rounded-full">
-                    Email Unverified
-                  </span>
-                )}
-              </div>
             </div>
 
             {/* Nav Sections */}
             {SIDEBAR_SECTIONS.map((section) => (
               <div key={section.label} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                {/* Section header */}
                 {section.href ? (
                   <button
                     onClick={() => setExpandedSection(expandedSection === section.label ? null : section.label)}
@@ -284,7 +278,6 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-                {/* Items — always visible for My Account, toggle for others */}
                 {(!section.href || expandedSection === section.label) && (
                   <ul>
                     {section.items.map((item: any) => {
@@ -322,10 +315,9 @@ export default function ProfilePage() {
               </div>
             ))}
 
-            {/* Logout (mobile visible) */}
             <button
               onClick={() => { logout(); router.push('/') }}
-              className="lg:hidden w-full flex items-center justify-center gap-2 text-red-500 border border-red-100 hover:bg-red-50 py-3 rounded-2xl text-sm font-medium transition-colors"
+              className="w-full flex items-center justify-center gap-2 text-red-500 border border-red-100 hover:bg-red-50 py-3 rounded-2xl text-sm font-medium transition-colors"
             >
               <LogOut className="w-4 h-4" /> Logout
             </button>
@@ -333,8 +325,8 @@ export default function ProfilePage() {
 
           {/* ── Main Content ── */}
           <main className="flex-1 min-w-0">
-            {/* Tabs + action */}
-            <div className="flex items-center gap-2 mb-4">
+            {/* Tabs + action (desktop) */}
+            <div className="hidden lg:flex items-center gap-2 mb-4">
               <button onClick={() => setActiveTab('listings')}
                 className={'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ' +
                   (activeTab === 'listings' ? 'bg-orange-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300')}>
@@ -352,6 +344,20 @@ export default function ProfilePage() {
               )}
               {activeTab === 'chats' && (
                 <Link href="/chats" className="ml-auto border border-orange-500 text-orange-500 hover:bg-orange-50 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+                  View Chats
+                </Link>
+              )}
+            </div>
+
+            {/* Mobile: post new / view chats action */}
+            <div className="lg:hidden flex justify-end mb-4">
+              {activeTab === 'listings' && (
+                <Link href="/products/new" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+                  + Post New
+                </Link>
+              )}
+              {activeTab === 'chats' && (
+                <Link href="/chats" className="border border-orange-500 text-orange-500 hover:bg-orange-50 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
                   View Chats
                 </Link>
               )}
@@ -388,7 +394,7 @@ export default function ProfilePage() {
                         <Link href={'/products/' + product.id}>
                           <div className="bg-slate-100 h-40 w-full flex items-center justify-center relative">
                             {product.images.length > 0 ? (
-                              <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" onError={(e: any) => { e.target.src = '/placeholder.png' }} />
+                              <Image src={product.images[0]} alt={product.title} fill className="object-cover" sizes="200px" />
                             ) : (
                               <Package className="w-10 h-10 text-gray-300" />
                             )}

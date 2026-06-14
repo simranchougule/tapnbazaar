@@ -27,6 +27,26 @@ export const sendEmailVerification = async (email: string, token: string) => {
   })
 }
 
+export const sendSmsOtp = async (phone: string, otp: string): Promise<boolean> => {
+  const apiKey = process.env.FAST2SMS_API_KEY
+  if (!apiKey) return false
+  try {
+    const res = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+      method: 'POST',
+      headers: { authorization: apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        route:    'otp',
+        variables_values: otp,
+        numbers:  phone,
+      }),
+    })
+    const data = await res.json() as { return?: boolean }
+    return data.return === true
+  } catch {
+    return false
+  }
+}
+
 export const sendOtpEmail = async (email: string, otp: string) => {
   await transporter.sendMail({
     from:    `"TapnBazaar" <${process.env.SMTP_USER}>`,

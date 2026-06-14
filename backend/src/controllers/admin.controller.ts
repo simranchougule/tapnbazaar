@@ -51,3 +51,44 @@ export const deleteProductAdmin = async (req: AuthRequest, res: Response): Promi
     res.status(200).json({ success: true, message: 'Product deleted' })
   } catch { res.status(500).json({ success: false, message: 'Something went wrong.' }) }
 }
+
+export const banUser = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!await isAdmin(req.user!.userId)) { res.status(403).json({ success: false, message: 'Admin only' }); return }
+    const { banned } = req.body
+    const user = await prisma.user.update({
+      where: { id: req.params.id as string },
+      data: { isBanned: banned ?? true },
+      select: { id: true, name: true, isBanned: true },
+    })
+    res.status(200).json({ success: true, user })
+  } catch { res.status(500).json({ success: false, message: 'Something went wrong.' }) }
+}
+
+export const markTrusted = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!await isAdmin(req.user!.userId)) { res.status(403).json({ success: false, message: 'Admin only' }); return }
+    const { trusted } = req.body
+    const user = await prisma.user.update({
+      where: { id: req.params.id as string },
+      data: { isTrusted: trusted ?? true },
+      select: { id: true, name: true, isTrusted: true },
+    })
+    res.status(200).json({ success: true, user })
+  } catch { res.status(500).json({ success: false, message: 'Something went wrong.' }) }
+}
+
+export const getReports = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!await isAdmin(req.user!.userId)) { res.status(403).json({ success: false, message: 'Admin only' }); return }
+    const reports = await prisma.report.findMany({
+      include: {
+        product: { select: { id: true, title: true } },
+        user:    { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    })
+    res.status(200).json({ success: true, reports })
+  } catch { res.status(500).json({ success: false, message: 'Something went wrong.' }) }
+}

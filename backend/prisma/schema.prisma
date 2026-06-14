@@ -24,6 +24,7 @@ model User {
   phoneVerified     Boolean   @default(false)
   emailVerified     Boolean   @default(false)
   isTrusted         Boolean   @default(false)
+  isBanned          Boolean   @default(false)
   emailVerifyToken  String?
   phoneOtp          String?
   phoneOtpExpiry    DateTime?
@@ -39,6 +40,8 @@ model User {
   reports          Report[]          @relation("ReporterReports")
   reportedBy       UserReport[]      @relation("ReportedUser")
   userReports      UserReport[]      @relation("UserReporter")
+  sellerReviews    Review[]          @relation("SellerReviews")
+  buyerReviews     Review[]          @relation("BuyerReviews")
 
   @@index([email])
   @@index([createdAt])
@@ -90,6 +93,7 @@ model Product {
   favorites   Favorite[]
   chats       Chat[]
   reports     Report[]
+  reviews     Review[]
 
   @@index([userId])
   @@index([categoryId])
@@ -214,6 +218,24 @@ model UserReport {
   @@index([reportedUserId])
   @@index([status])
   @@map("user_reports")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  sellerId  String
+  buyerId   String
+  productId String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  seller    User     @relation("SellerReviews",  fields: [sellerId],  references: [id], onDelete: Cascade)
+  buyer     User     @relation("BuyerReviews",   fields: [buyerId],   references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([buyerId, productId])
+  @@index([sellerId])
+  @@map("reviews")
 }
 
 enum Condition {
