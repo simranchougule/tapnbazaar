@@ -14,7 +14,7 @@ html {
 
 body {
   min-height: 100%;
-  background-color: #eff2f5;
+  background-color: #f8fafc;
   color: #0f172a;
 }
 
@@ -38,4 +38,8 @@ textarea {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
 }

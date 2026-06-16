@@ -111,7 +111,7 @@ const sampleProducts = [
   },
   {
     title: 'MacBook Pro M2 2023',
-    description: '14 inch MacBook Pro M2, 16GB RAM, 512GB SSD. Barely used, still under warranty. Selling due to upgrade.',
+    description: '14 inch MacBook Pro M2, 16GB RAM, 512GB SSD. Barely used, still under warranty.',
     price: 145000, condition: 'LIKE_NEW', city: 'Bangalore', state: 'Karnataka',
     categorySlug: 'laptops',
     images: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600'],
@@ -125,7 +125,7 @@ const sampleProducts = [
   },
   {
     title: 'Sony Alpha A7 III Camera',
-    description: 'Full frame mirrorless camera with 28-70mm kit lens. Shutter count under 5000. Comes with 2 batteries and bag.',
+    description: 'Full frame mirrorless camera with 28-70mm kit lens. Shutter count under 5000.',
     price: 135000, condition: 'GOOD', city: 'Chennai', state: 'Tamil Nadu',
     categorySlug: 'cameras',
     images: ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600'],
@@ -142,7 +142,7 @@ const sampleProducts = [
     description: '2022 model, 12000 km driven, single owner. All documents clear. New tyres fitted last month.',
     price: 68000, condition: 'GOOD', city: 'Pune', state: 'Maharashtra',
     categorySlug: 'scooters',
-    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600'],
+    images: ['https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600'],
   },
   {
     title: 'Royal Enfield Classic 350',
@@ -153,7 +153,7 @@ const sampleProducts = [
   },
   {
     title: 'Maruti Swift 2020',
-    description: '2020 Maruti Swift VXi, 35000 km driven. Petrol, single owner. All service records available. No accidents.',
+    description: '2020 Maruti Swift VXi, 35000 km driven. Petrol, single owner. All service records available.',
     price: 520000, condition: 'GOOD', city: 'Mumbai', state: 'Maharashtra',
     categorySlug: 'cars',
     images: ['https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=600'],
@@ -181,7 +181,7 @@ const sampleProducts = [
   },
   {
     title: '3BHK Flat for Rent - Baner',
-    description: 'Spacious 3BHK semi-furnished flat in Baner. 2 bathrooms, parking, 24/7 security. Close to IT park.',
+    description: 'Spacious 3BHK semi-furnished flat in Baner. 2 bathrooms, parking, 24/7 security.',
     price: 28000, condition: 'NEW', city: 'Pune', state: 'Maharashtra',
     categorySlug: 'houses-for-rent',
     images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600'],
@@ -195,7 +195,7 @@ const sampleProducts = [
   },
   {
     title: 'IKEA Sofa 3 Seater',
-    description: 'IKEA EKTORP 3 seater sofa, white cover. Purchased 1 year ago. Minor stain on one cushion, cover washable.',
+    description: 'IKEA EKTORP 3 seater sofa, white cover. Purchased 1 year ago. Minor stain on one cushion.',
     price: 18000, condition: 'GOOD', city: 'Bangalore', state: 'Karnataka',
     categorySlug: 'sofas',
     images: ['https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600'],
@@ -216,7 +216,7 @@ const sampleProducts = [
   },
   {
     title: 'Persian Cat Female',
-    description: '2 year old Persian cat, very friendly and trained. Selling due to relocation. Food and accessories included.',
+    description: '2 year old Persian cat, very friendly and trained. Selling due to relocation.',
     price: 8000, condition: 'GOOD', city: 'Mumbai', state: 'Maharashtra',
     categorySlug: 'cats',
     images: ['https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600'],
@@ -230,7 +230,7 @@ const sampleProducts = [
   },
   {
     title: 'Yamaha Acoustic Guitar',
-    description: 'Yamaha F310 acoustic guitar, 2 years old. Good condition, minor fret wear. Comes with bag and extra strings.',
+    description: 'Yamaha F310 acoustic guitar, 2 years old. Good condition, minor fret wear. Comes with bag.',
     price: 4500, condition: 'GOOD', city: 'Bangalore', state: 'Karnataka',
     categorySlug: 'musical-instruments',
     images: ['https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600'],
@@ -251,14 +251,14 @@ const sampleProducts = [
   },
   {
     title: 'Whirlpool Washing Machine 7kg',
-    description: 'Front load washing machine, 3 years old. Works perfectly, all wash programs functional. Self pickup only.',
+    description: 'Front load washing machine, 3 years old. Works perfectly, all wash programs functional.',
     price: 14000, condition: 'GOOD', city: 'Pune', state: 'Maharashtra',
     categorySlug: 'home-appliances',
     images: ['https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=600'],
   },
   {
     title: 'Baby Stroller - Chicco Brand',
-    description: 'Chicco Activ3 stroller, used for 6 months. Folds compactly, good condition. All safety features intact.',
+    description: 'Chicco Activ3 stroller, used for 6 months. Folds compactly, good condition.',
     price: 6500, condition: 'GOOD', city: 'Mumbai', state: 'Maharashtra',
     categorySlug: 'strollers',
     images: ['https://images.unsplash.com/photo-1519689680058-324335c77eba?w=600'],
@@ -286,24 +286,24 @@ const sampleProducts = [
   },
   {
     title: 'React & Node.js Full Stack Course',
-    description: 'Recorded course with 40+ hours of content. Covers React, Node, Express, MongoDB. Lifetime access included.',
+    description: 'Recorded course with 40+ hours of content. Covers React, Node, Express, MongoDB. Lifetime access.',
     price: 1500, condition: 'NEW', city: 'Mumbai', state: 'Maharashtra',
     categorySlug: 'courses',
     images: ['https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=600'],
   },
   {
     title: 'Home Deep Cleaning Service',
-    description: 'Professional home deep cleaning for 2BHK. Includes kitchen, bathrooms, all rooms. Available on weekends.',
+    description: 'Professional home deep cleaning for 2BHK. Includes kitchen, bathrooms, all rooms.',
     price: 2500, condition: 'NEW', city: 'Pune', state: 'Maharashtra',
     categorySlug: 'home-cleaning',
-    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600'],
+    images: ['https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=600'],
   },
   {
     title: 'Road Bicycle Trek FX3',
     description: 'Trek FX3 hybrid bicycle, purchased last year. Excellent for city commuting. Rarely used.',
     price: 22000, condition: 'LIKE_NEW', city: 'Bangalore', state: 'Karnataka',
     categorySlug: 'bicycles',
-    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600'],
+    images: ['https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600'],
   },
 ]
 
