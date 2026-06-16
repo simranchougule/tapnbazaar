@@ -18,15 +18,15 @@ const categories = [
     { name: 'Houses for Rent', slug: 'houses-for-rent' },
     { name: 'PG & Guest Houses', slug: 'pg-guest-houses' },
   ]},
-  { name: 'Electronics', slug: 'electronics', icon: '📱', children: [
+ { name: 'Electronics', slug: 'electronics', icon: '📱', children: [
     { name: 'Mobile Phones', slug: 'mobile-phones' },
     { name: 'Tablets', slug: 'tablets' },
-    { name: 'Laptops', slug: 'laptops' },
-    { name: 'Computers', slug: 'computers' },
+    { name: 'Laptops & Computers', slug: 'laptops' },
     { name: 'TVs', slug: 'tvs' },
     { name: 'Cameras', slug: 'cameras' },
     { name: 'Home Appliances', slug: 'home-appliances' },
     { name: 'Gaming Consoles', slug: 'gaming-consoles' },
+    { name: 'Electronics Accessories', slug: 'electronics-accessories' },
   ]},
   { name: 'Fashion & Beauty', slug: 'fashion', icon: '👕', children: [
     { name: "Men's Clothing", slug: 'mens-clothing' },
@@ -77,7 +77,7 @@ const categories = [
   { name: 'Kids & Toys', slug: 'kids-toys', icon: '🧸', children: [
     { name: 'Toys', slug: 'toys' },
     { name: 'Baby Products', slug: 'baby-products' },
-    { name: 'Strollers', slug: 'strollers' },
+    { name: 'Prams & Strollers', slug: 'strollers' },
     { name: 'School Supplies', slug: 'school-supplies' },
   ]},
   { name: 'Sports & Hobbies', slug: 'sports', icon: '🎮', children: [
