@@ -8,7 +8,7 @@ import Navbar from '@/components/layout/Navbar'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Category } from '@/types'
-import { ArrowLeft, Upload, X, MapPin, Locate, Navigation, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Upload, X, MapPin, Locate, Navigation, ShieldCheck, ImagePlus, Tag, FileText } from 'lucide-react'
 import { INDIA_STATES } from '@/lib/constants'
 import PhoneVerifyModal from '@/components/PhoneVerifyModal'
 
@@ -19,6 +19,17 @@ const CONDITIONS = [
   { value: 'FAIR',     label: 'Fair' },
   { value: 'POOR',     label: 'Poor' },
 ]
+
+function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
+        <Icon className="w-3.5 h-3.5 text-orange-500" />
+      </div>
+      <h2 className="text-sm font-bold text-gray-800">{title}</h2>
+    </div>
+  )
+}
 
 export default function CreateProductPage() {
   const router = useRouter()
@@ -138,21 +149,36 @@ export default function CreateProductPage() {
     await doSubmit()
   }
 
+  // Simple progress estimate
+  const requiredFilled = [formData.title, formData.price, formData.categoryId, formData.city, formData.state, formData.description].filter(Boolean).length
+  const progress = Math.round((requiredFilled / 6) * 100)
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-2xl mx-auto px-4 py-5 sm:py-8 pb-28 sm:pb-8">
 
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
           <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-800">Post a Listing</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Post a Listing</h1>
           {user?.phoneVerified && (
-            <span className="ml-auto flex items-center gap-1 text-xs text-green-600 bg-green-50 border border-green-200 px-3 py-1 rounded-full">
+            <span className="ml-auto hidden sm:flex items-center gap-1 text-xs text-green-600 bg-green-50 border border-green-200 px-3 py-1 rounded-full">
               <ShieldCheck className="w-3.5 h-3.5" /> Phone Verified
             </span>
           )}
+        </div>
+
+        {/* Progress bar — mobile only */}
+        <div className="sm:hidden mb-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-gray-400 font-medium">Listing progress</span>
+            <span className="text-xs text-orange-500 font-semibold">{progress}%</span>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-orange-500 rounded-full transition-all duration-300" style={{ width: progress + '%' }} />
+          </div>
         </div>
 
         {/* Phone verification banner */}
@@ -160,7 +186,7 @@ export default function CreateProductPage() {
           <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-500 flex-shrink-0" />
-              <p className="text-sm text-amber-700 font-medium">Phone verification required to post listings</p>
+              <p className="text-xs sm:text-sm text-amber-700 font-medium">Phone verification required</p>
             </div>
             <button onClick={() => setShowVerifyModal(true)}
               className="text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0">
@@ -169,12 +195,12 @@ export default function CreateProductPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* Image Upload */}
+            {/* Photos */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Photos (max 5)</label>
+              <SectionHeader icon={ImagePlus} title="Photos (max 5)" />
               {images.length > 0 && (
                 <div className="grid grid-cols-5 gap-2 mb-3">
                   {images.map((url, index) => (
@@ -190,15 +216,15 @@ export default function CreateProductPage() {
                 </div>
               )}
               {images.length < 5 && (
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
+                <label className="flex flex-col items-center justify-center w-full h-28 sm:h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
                   {uploading ? (
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
                       <span className="text-sm text-orange-500">Uploading...</span>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <Upload className="w-8 h-8 text-gray-400" />
+                    <div className="flex flex-col items-center gap-1.5">
+                      <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
                       <span className="text-sm text-gray-500">Click to upload photos</span>
                       <span className="text-xs text-gray-400">PNG, JPG up to 5MB each</span>
                     </div>
@@ -208,119 +234,140 @@ export default function CreateProductPage() {
               )}
             </div>
 
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
-              <input type="text" name="title" value={formData.title} onChange={handleChange}
-                placeholder="e.g. iPhone 13 Pro Max 256GB"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
-            </div>
+            <div className="h-px bg-gray-100" />
 
-            {/* Category */}
+            {/* Item Details */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
-              <select name="categoryId" value={formData.categoryId} onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white">
-                <option value="">Select a category</option>
-                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>)}
-              </select>
-            </div>
+              <SectionHeader icon={Tag} title="Item Details" />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
+                  <input type="text" name="title" value={formData.title} onChange={handleChange}
+                    placeholder="e.g. iPhone 13 Pro Max 256GB"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
+                </div>
 
-            {/* Price */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.) <span className="text-red-500">*</span></label>
-              <input type="number" name="price" value={formData.price} onChange={handleChange}
-                placeholder="e.g. 15000" min="0"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
+                  <select name="categoryId" value={formData.categoryId} onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white">
+                    <option value="">Select a category</option>
+                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>)}
+                  </select>
+                </div>
 
-            {/* Condition */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Condition <span className="text-red-500">*</span></label>
-              <div className="grid grid-cols-5 gap-2">
-                {CONDITIONS.map(cond => (
-                  <button key={cond.value} type="button"
-                    onClick={() => setFormData({ ...formData, condition: cond.value })}
-                    className={`py-2 px-1 text-xs font-medium rounded-xl border transition-colors ${
-                      formData.condition === cond.value ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-600 hover:border-orange-300'
-                    }`}>
-                    {cond.label}
-                  </button>
-                ))}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.) <span className="text-red-500">*</span></label>
+                  <input type="number" name="price" value={formData.price} onChange={handleChange}
+                    placeholder="e.g. 15000" min="0"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Condition <span className="text-red-500">*</span></label>
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    {CONDITIONS.map(cond => (
+                      <button key={cond.value} type="button"
+                        onClick={() => setFormData({ ...formData, condition: cond.value })}
+                        className={"py-2.5 px-1 text-xs font-medium rounded-xl border transition-colors " + (
+                          formData.condition === cond.value ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-600 hover:border-orange-300'
+                        )}>
+                        {cond.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
+            <div className="h-px bg-gray-100" />
+
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-red-500">*</span></label>
+              <SectionHeader icon={FileText} title="Description" />
               <textarea name="description" value={formData.description} onChange={handleChange}
                 placeholder="Describe your item — condition, age, reason for selling..."
-                rows={5}
+                rows={4}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 resize-none" />
             </div>
 
+            <div className="h-px bg-gray-100" />
+
             {/* Location */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">Location <span className="text-red-500">*</span></label>
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <SectionHeader icon={MapPin} title="Location" />
                 <button type="button" onClick={handleGetLocation} disabled={locating}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  className={"flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all " + (
                     locationSet ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100'
-                  }`}>
+                  )}>
                   {locating ? (
-                    <><div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />Detecting...</>
+                    <><div className="w-3.5 h-3.5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />Detecting</>
                   ) : locationSet ? (
-                    <><Navigation className="w-4 h-4" />Location Set ✓</>
+                    <><Navigation className="w-3.5 h-3.5" />Set ✓</>
                   ) : (
-                    <><Locate className="w-4 h-4" />Use My Location</>
+                    <><Locate className="w-3.5 h-3.5" />Use GPS</>
                   )}
                 </button>
               </div>
 
               {locationSet && formData.latitude && (
-                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 mb-3">
                   <MapPin className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <p className="text-sm text-green-700">GPS coordinates saved — buyers can find this listing on the map</p>
+                  <p className="text-xs sm:text-sm text-green-700">GPS coordinates saved — buyers can find this on the map</p>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">City <span className="text-red-500">*</span></label>
-                  <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Pune"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">City <span className="text-red-500">*</span></label>
+                    <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Pune"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">State <span className="text-red-500">*</span></label>
+                    <select name="state" value={formData.state} onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white">
+                      <option value="">Select state</option>
+                      {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">State <span className="text-red-500">*</span></label>
-                  <select name="state" value={formData.state} onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white">
-                    <option value="">Select state</option>
-                    {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Area / Locality</label>
-                  <input type="text" name="area" value={formData.area} onChange={handleChange} placeholder="Baner, Koregaon Park..."
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Pincode</label>
-                  <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} placeholder="411045"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Area / Locality</label>
+                    <input type="text" name="area" value={formData.area} onChange={handleChange} placeholder="Baner, Koregaon Park..."
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Pincode</label>
+                    <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} placeholder="411045"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Submit */}
+            {/* Submit — normal on desktop, hidden on mobile (sticky version below) */}
             <button type="submit" disabled={loading || uploading}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2">
+              className="hidden sm:flex w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold py-4 rounded-xl transition-colors items-center justify-center gap-2">
               {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Post Listing'}
             </button>
           </form>
         </div>
+      </div>
+
+      {/* Sticky submit bar — mobile only */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-3 pb-5 z-40">
+        <button
+          onClick={(e) => handleSubmit(e as any)}
+          disabled={loading || uploading}
+          className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+        >
+          {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Post Listing'}
+        </button>
       </div>
 
       {showVerifyModal && (
