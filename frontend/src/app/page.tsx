@@ -855,11 +855,11 @@ function HomeContent() {
             )}
           </>
         )}
-      </div>
+     </div>
+      <TrustSection />
     </div>
   );
 }
-
 export default function HomePage() {
   return (
     <Suspense
