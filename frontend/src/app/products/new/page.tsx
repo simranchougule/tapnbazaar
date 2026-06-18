@@ -1,5 +1,4 @@
 'use client'
-
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -8,7 +7,7 @@ import Navbar from '@/components/layout/Navbar'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Category } from '@/types'
-import { ArrowLeft, Upload, X, MapPin, Locate, Navigation, ShieldCheck, ImagePlus, Tag, FileText } from 'lucide-react'
+import { ArrowLeft, Upload, X, MapPin, Locate, Navigation, ShieldCheck, ImagePlus, Tag, FileText, Package, Truck } from 'lucide-react'
 import { INDIA_STATES } from '@/lib/constants'
 import PhoneVerifyModal from '@/components/PhoneVerifyModal'
 
@@ -18,6 +17,21 @@ const CONDITIONS = [
   { value: 'GOOD',     label: 'Good' },
   { value: 'FAIR',     label: 'Fair' },
   { value: 'POOR',     label: 'Poor' },
+]
+
+const LISTING_TYPES = [
+  {
+    value: 'local',
+    label: 'Local Sale',
+    desc: 'You own the item and ship/hand it over yourself',
+    icon: Package,
+  },
+  {
+    value: 'dropship',
+    label: 'Dropship',
+    desc: 'Supplier ships directly to buyer on your behalf',
+    icon: Truck,
+  },
 ]
 
 function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
@@ -34,7 +48,6 @@ function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
 export default function CreateProductPage() {
   const router = useRouter()
   const { isLoggedIn, loadFromStorage, user } = useAuthStore()
-
   const [categories, setCategories]           = useState<Category[]>([])
   const [loading, setLoading]                 = useState(false)
   const [uploading, setUploading]             = useState(false)
@@ -42,11 +55,17 @@ export default function CreateProductPage() {
   const [locating, setLocating]               = useState(false)
   const [locationSet, setLocationSet]         = useState(false)
   const [showVerifyModal, setShowVerifyModal] = useState(false)
-
+  const [submitted, setSubmitted]             = useState(false)
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', condition: 'GOOD',
     categoryId: '', city: '', state: '', area: '', pincode: '',
     latitude: '', longitude: '',
+    listing_type: 'local',
+    supplier_info: '',
+    supplier_cost: '',
+    delivery_days: '5-10 days',
+    return_policy: 'Contact seller within 7 days',
+    shipping_note: '',
   })
 
   useEffect(() => { loadFromStorage(); fetchCategories() }, [])
@@ -122,6 +141,8 @@ export default function CreateProductPage() {
   const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index))
 
   const doSubmit = async () => {
+    if (submitted) return
+    setSubmitted(true)
     try {
       setLoading(true)
       const res = await api.post('/products', {
@@ -137,6 +158,7 @@ export default function CreateProductPage() {
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to post listing')
+      setSubmitted(false)
     } finally { setLoading(false) }
   }
 
@@ -144,6 +166,9 @@ export default function CreateProductPage() {
     e.preventDefault()
     if (!formData.title || !formData.price || !formData.categoryId || !formData.city || !formData.state) {
       toast.error('Please fill in all required fields'); return
+    }
+    if (formData.listing_type === 'dropship' && !formData.supplier_cost) {
+      toast.error('Please enter supplier cost for dropship listing'); return
     }
     if (!user?.phoneVerified) { setShowVerifyModal(true); return }
     await doSubmit()
@@ -197,6 +222,47 @@ export default function CreateProductPage() {
 
         <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-6">
+
+            {/* Listing Type */}
+            <div>
+              <SectionHeader icon={Truck} title="Listing Type" />
+              <div className="grid grid-cols-2 gap-3">
+                {LISTING_TYPES.map(type => {
+                  const Icon = type.icon
+                  const selected = formData.listing_type === type.value
+                  return (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, listing_type: type.value })}
+                      className={`flex flex-col items-start gap-1.5 p-3.5 rounded-xl border-2 transition-all text-left ${
+                        selected
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-300'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selected ? 'bg-orange-500' : 'bg-gray-100'}`}>
+                        <Icon className={`w-4 h-4 ${selected ? 'text-white' : 'text-gray-500'}`} />
+                      </div>
+                      <span className={`text-sm font-semibold ${selected ? 'text-orange-600' : 'text-gray-700'}`}>{type.label}</span>
+                      <span className="text-xs text-gray-400 leading-tight">{type.desc}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Dropship info banner */}
+              {formData.listing_type === 'dropship' && (
+                <div className="mt-3 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                  <Truck className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-700">
+                    Your listing will show a <strong>Dropship</strong> badge and estimated delivery of 5–10 days. Supplier details are kept private from buyers.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="h-px bg-gray-100" />
 
             {/* Photos */}
             <div>
@@ -257,7 +323,16 @@ export default function CreateProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.) <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Price (Rs.) <span className="text-red-500">*</span>
+                    <span className="relative group inline-block ml-1.5 cursor-pointer">
+                      <span className="text-gray-400 hover:text-orange-500 transition-colors text-xs border border-gray-300 rounded-full px-1.5 py-0.5">ⓘ</span>
+                      <span className="absolute left-1/2 -translate-x-1/2 bottom-7 w-56 bg-gray-800 text-white text-xs rounded-xl px-3 py-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+                        🏷️ What the BUYER pays you (e.g. Rs. 800). Set this higher than your supplier cost to make a profit.
+                        <span className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-800" />
+                      </span>
+                    </span>
+                  </label>
                   <input type="number" name="price" value={formData.price} onChange={handleChange}
                     placeholder="e.g. 15000" min="0"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
@@ -292,6 +367,163 @@ export default function CreateProductPage() {
             </div>
 
             <div className="h-px bg-gray-100" />
+
+            {/* Supplier Info — only for dropship */}
+            {formData.listing_type === 'dropship' && (
+              <>
+                <div className="space-y-4">
+                  <SectionHeader icon={Truck} title="Supplier Details (Private)" />
+
+                  {/* Supplier cost */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Supplier Cost (Rs.) <span className="text-red-500">*</span>
+                      <span className="relative group inline-block ml-1.5 cursor-pointer">
+                        <span className="text-gray-400 hover:text-orange-500 transition-colors text-xs border border-gray-300 rounded-full px-1.5 py-0.5">ⓘ</span>
+                        <span className="absolute left-1/2 -translate-x-1/2 bottom-7 w-56 bg-gray-800 text-white text-xs rounded-xl px-3 py-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+                          💸 What YOU pay the supplier (e.g. Meesho price Rs. 500). This is private — buyers never see it.
+                          <span className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-800" />
+                        </span>
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      name="supplier_cost"
+                      value={formData.supplier_cost}
+                      onChange={handleChange}
+                      placeholder="e.g. 500"
+                      min="0"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">What you pay the supplier — never shown to buyers.</p>
+                  </div>
+
+                  {/* Profit calculator */}
+                  {formData.supplier_cost && formData.price && (
+                    (() => {
+                      const cost   = parseFloat(formData.supplier_cost)
+                      const sell   = parseFloat(formData.price)
+                      const profit = sell - cost
+                      const margin = sell > 0 ? ((profit / sell) * 100).toFixed(1) : '0'
+                      const isGood = profit > 0
+                      return (
+                        <div className={`rounded-xl p-4 border ${isGood ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                          <p className="text-xs font-semibold text-gray-600 mb-3">💰 Profit Calculator</p>
+                          <div className="grid grid-cols-3 gap-3 text-center">
+                            <div>
+                              <p className="text-xs text-gray-400">Supplier Cost</p>
+                              <p className="text-sm font-bold text-gray-700">Rs.{cost.toLocaleString('en-IN')}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Selling Price</p>
+                              <p className="text-sm font-bold text-gray-700">Rs.{sell.toLocaleString('en-IN')}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Your Profit</p>
+                              <p className={`text-sm font-bold ${isGood ? 'text-green-600' : 'text-red-500'}`}>
+                                {isGood ? '+' : ''}Rs.{profit.toLocaleString('en-IN')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className={`mt-3 text-center text-xs font-medium ${isGood ? 'text-green-600' : 'text-red-500'}`}>
+                            {isGood
+                              ? `✅ Margin: ${margin}% — Good to go!`
+                              : '⚠️ Selling price is lower than supplier cost — you will lose money!'}
+                          </div>
+                        </div>
+                      )
+                    })()
+                  )}
+
+                  {/* Supplier info */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Supplier Info</label>
+                    <textarea
+                      name="supplier_info"
+                      value={formData.supplier_info}
+                      onChange={handleChange}
+                      placeholder="e.g. Meesho product link, IndiaMART supplier name, WhatsApp number..."
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 resize-none"
+                    />
+                    <p className="text-xs text-gray-400 mt-1.5">This is only visible to you — buyers will never see supplier details.</p>
+                  </div>
+
+                  {/* Shipping details — visible to buyers */}
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">🚚 Shipping Details <span className="text-xs font-normal text-gray-400">(shown to buyers)</span></p>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Delivery</label>
+                      <select
+                        name="delivery_days"
+                        value={formData.delivery_days}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white text-sm"
+                      >
+                        <option value="1-2 days">1–2 days (Express)</option>
+                        <option value="3-5 days">3–5 days (Fast)</option>
+                        <option value="5-10 days">5–10 days (Standard)</option>
+                        <option value="10-15 days">10–15 days</option>
+                        <option value="15-20 days">15–20 days</option>
+                        <option value="20-30 days">20–30 days</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Return Policy</label>
+                      <select
+                        name="return_policy"
+                        value={formData.return_policy}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white text-sm"
+                      >
+                        <option value="No returns">No returns</option>
+                        <option value="Contact seller within 7 days">Contact seller within 7 days</option>
+                        <option value="Exchange only within 7 days">Exchange only within 7 days</option>
+                        <option value="7 day return policy">7 day return policy</option>
+                        <option value="15 day return policy">15 day return policy</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Shipping Note <span className="text-gray-400">(optional)</span></label>
+                      <input
+                        type="text"
+                        name="shipping_note"
+                        value={formData.shipping_note}
+                        onChange={handleChange}
+                        placeholder="e.g. Free shipping across India, Shipping charges extra..."
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Buyer preview */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                    <p className="text-xs font-semibold text-gray-500 mb-2">👁️ What buyers will see:</p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span>🚚</span>
+                        <p className="text-xs font-semibold text-blue-700">Dropship Item</p>
+                        <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-medium">Ships in {formData.delivery_days}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <p className="text-xs text-gray-500">📦 Supplier ships directly to buyer</p>
+                        <p className="text-xs text-gray-500">⏱️ {formData.delivery_days}</p>
+                        <p className="text-xs text-gray-500">🔄 {formData.return_policy}</p>
+                        <p className="text-xs text-gray-500">✅ Seller verified</p>
+                      </div>
+                      {formData.shipping_note && (
+                        <p className="text-xs text-blue-600 mt-1">📝 {formData.shipping_note}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="h-px bg-gray-100" />
+              </>
+            )}
+
 
             {/* Location */}
             <div>

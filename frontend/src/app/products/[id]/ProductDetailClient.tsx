@@ -284,7 +284,58 @@ export default function ProductDetailClient() {
               )}
             </div>
 
-            <p className="text-gray-600 text-sm leading-relaxed">{product.description}</p>
+           <p className="text-gray-600 text-sm leading-relaxed">{product.description}</p>
+
+            {/* Dropship shipping info */}
+            {(product as any).listingType === 'dropship' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🚚</span>
+                  <p className="text-sm font-semibold text-blue-700">Dropship Item</p>
+                  <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+                    Ships in {(product as any).deliveryDays || '5-10 days'}
+                  </span>
+                </div>
+                <div className="h-px bg-blue-100" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm mt-0.5">📦</span>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">Shipping</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Supplier ships directly to you across India</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm mt-0.5">⏱️</span>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">Delivery Time</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{(product as any).deliveryDays || '5–10 business days'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm mt-0.5">🔄</span>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">Returns</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{(product as any).returnPolicy || 'Contact seller within 7 days'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm mt-0.5">✅</span>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">Authenticity</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Seller verified by TapnBazaar</p>
+                    </div>
+                  </div>
+                </div>
+                {(product as any).shippingNote && (
+                  <div className="bg-blue-100 rounded-xl px-3 py-2">
+                    <p className="text-xs text-blue-700">📝 {(product as any).shippingNote}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Seller info */}
 
             {/* Seller info */}
             <Link href={'/users/' + product.user.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow">

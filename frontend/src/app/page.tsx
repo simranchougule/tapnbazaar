@@ -784,6 +784,11 @@ function HomeContent() {
                     ) : (
                       <Tag className="w-10 h-10 text-slate-300" />
                     )}
+                    {product.listingType === 'dropship' && (
+                      <div className="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        🚚 Dropship
+                      </div>
+                    )}
                   </div>
                   <div className="p-3 sm:p-4">
                     <p className="font-bold text-slate-900 text-base">
@@ -806,6 +811,11 @@ function HomeContent() {
                         {relativeTime(product.createdAt)}
                       </span>
                     </div>
+                    {product.listingType === 'dropship' && (
+                      <p className="text-[10px] text-blue-500 mt-1 flex items-center gap-1">
+                        🚚 Ships in 5–10 days
+                      </p>
+                    )}
                   </div>
                 </Link>
               ))}
