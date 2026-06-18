@@ -1,13 +1,12 @@
 'use client'
 import Image from 'next/image'
-
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Navbar from '@/components/layout/Navbar'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
-import { ArrowLeft, Trash2, Upload, X } from 'lucide-react'
+import { ArrowLeft, Trash2, Upload, X, Truck } from 'lucide-react'
 import { INDIA_STATES } from '@/lib/constants'
 
 const CONDITIONS = [
@@ -33,13 +32,19 @@ export default function EditProductPage() {
   const [images, setImages]       = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [formData, setFormData] = useState({
-    title:       '',
-    description: '',
-    price:       '',
-    condition:   'GOOD',
-    city:        '',
-    state:       '',
-    status:      'ACTIVE',
+    title:         '',
+    description:   '',
+    price:         '',
+    condition:     'GOOD',
+    city:          '',
+    state:         '',
+    status:        'ACTIVE',
+    listing_type:  'local',
+    supplier_info: '',
+    supplier_cost: '',
+    delivery_days: '5-10 days',
+    return_policy: 'Contact seller within 7 days',
+    shipping_note: '',
   })
 
   useEffect(() => {
@@ -61,13 +66,19 @@ export default function EditProductPage() {
       const p   = res.data.product
       setImages(p.images || [])
       setFormData({
-        title:       p.title,
-        description: p.description,
-        price:       p.price.toString(),
-        condition:   p.condition,
-        city:        p.city,
-        state:       p.state,
-        status:      p.status,
+        title:         p.title,
+        description:   p.description,
+        price:         p.price.toString(),
+        condition:     p.condition,
+        city:          p.city,
+        state:         p.state,
+        status:        p.status,
+        listing_type:  p.listingType || 'local',
+        supplier_info: p.supplierInfo || '',
+        supplier_cost: p.supplierCost ? p.supplierCost.toString() : '',
+        delivery_days: p.deliveryDays || '5-10 days',
+        return_policy: p.returnPolicy || 'Contact seller within 7 days',
+        shipping_note: p.shippingNote || '',
       })
     } catch (error) {
       toast.error('Product not found')
@@ -77,7 +88,7 @@ export default function EditProductPage() {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
@@ -113,6 +124,10 @@ export default function EditProductPage() {
     e.preventDefault()
     if (!formData.title || !formData.price || !formData.city || !formData.state) {
       toast.error('Please fill in all required fields')
+      return
+    }
+    if (formData.listing_type === 'dropship' && !formData.supplier_cost) {
+      toast.error('Please enter supplier cost for dropship listing')
       return
     }
     try {
@@ -159,6 +174,14 @@ export default function EditProductPage() {
     )
   }
 
+  const isDropship = formData.listing_type === 'dropship'
+  const profit = isDropship && formData.supplier_cost && formData.price
+    ? parseFloat(formData.price) - parseFloat(formData.supplier_cost)
+    : null
+  const margin = profit !== null && parseFloat(formData.price) > 0
+    ? ((profit / parseFloat(formData.price)) * 100).toFixed(1)
+    : null
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -166,10 +189,7 @@ export default function EditProductPage() {
 
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-xl"
-            >
+            <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl">
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <h1 className="text-2xl font-bold text-gray-800">Edit Listing</h1>
@@ -188,19 +208,14 @@ export default function EditProductPage() {
 
             {/* Image Upload */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Photos (max 5)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Photos (max 5)</label>
               {images.length > 0 && (
                 <div className="grid grid-cols-5 gap-2 mb-3">
                   {images.map((url, index) => (
                     <div key={index} className="relative aspect-square">
                       <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-gray-200" loading="lazy" />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                      >
+                      <button type="button" onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
                         <X className="w-3 h-3" />
                       </button>
                       {index === 0 && (
@@ -228,44 +243,52 @@ export default function EditProductPage() {
               )}
             </div>
 
+            {/* Listing Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-2">Listing Type</label>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { value: 'local',    label: 'Local Sale',  desc: 'You own and ship the item' },
+                  { value: 'dropship', label: 'Dropship',    desc: 'Supplier ships to buyer' },
+                ].map(type => (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, listing_type: type.value })}
+                    className={`flex flex-col items-start gap-1 p-3 rounded-xl border-2 transition-all text-left ${
+                      formData.listing_type === type.value
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-gray-200 hover:border-orange-300'
+                    }`}
+                  >
+                    <span className={`text-sm font-semibold ${formData.listing_type === type.value ? 'text-orange-600' : 'text-gray-700'}`}>
+                      {type.value === 'dropship' ? '🚚' : '📦'} {type.label}
+                    </span>
+                    <span className="text-xs text-gray-400">{type.desc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price (Rs.) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
+              <input type="text" name="title" value={formData.title} onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Condition <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.) <span className="text-red-500">*</span></label>
+              <input type="number" name="price" value={formData.price} onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Condition <span className="text-red-500">*</span></label>
               <div className="grid grid-cols-5 gap-2">
                 {CONDITIONS.map((cond) => (
-                  <button
-                    key={cond.value}
-                    type="button"
+                  <button key={cond.value} type="button"
                     onClick={() => setFormData({ ...formData, condition: cond.value })}
-                    className={"py-2 px-1 text-xs font-medium rounded-xl border transition-colors " + (formData.condition === cond.value ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-600')}
-                  >
+                    className={"py-2 px-1 text-xs font-medium rounded-xl border transition-colors " + (formData.condition === cond.value ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-600')}>
                     {cond.label}
                   </button>
                 ))}
@@ -273,17 +296,12 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <div className="grid grid-cols-3 gap-2">
                 {STATUSES.map((s) => (
-                  <button
-                    key={s.value}
-                    type="button"
+                  <button key={s.value} type="button"
                     onClick={() => setFormData({ ...formData, status: s.value })}
-                    className={"py-2 px-1 text-xs font-medium rounded-xl border transition-colors " + (formData.status === s.value ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-600')}
-                  >
+                    className={"py-2 px-1 text-xs font-medium rounded-xl border transition-colors " + (formData.status === s.value ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-600')}>
                     {s.label}
                   </button>
                 ))}
@@ -291,59 +309,149 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={5}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 resize-none"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-red-500">*</span></label>
+              <textarea name="description" value={formData.description} onChange={handleChange}
+                rows={5} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 resize-none" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-500">*</span></label>
+                <input type="text" name="city" value={formData.city} onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="state"
-                  value={formData.state}
+                <label className="block text-sm font-medium text-gray-700 mb-1">State <span className="text-red-500">*</span></label>
+                <select name="state" value={formData.state}
                   onChange={e => setFormData({ ...formData, state: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 bg-white"
-                >
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 bg-white">
                   <option value="">Select state</option>
-                  {INDIA_STATES.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
+                  {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading || uploading}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                'Save Changes'
-              )}
+            {/* Dropship fields — only shown for dropship listings */}
+            {isDropship && (
+              <div className="space-y-4 border-t border-gray-100 pt-5">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-orange-500" />
+                  <p className="text-sm font-bold text-gray-800">Dropship Details (Private)</p>
+                </div>
+
+                {/* Supplier cost */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Supplier Cost (Rs.) <span className="text-red-500">*</span>
+                  </label>
+                  <input type="number" name="supplier_cost" value={formData.supplier_cost} onChange={handleChange}
+                    placeholder="e.g. 500" min="0"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500" />
+                  <p className="text-xs text-gray-400 mt-1">What you pay the supplier — never shown to buyers.</p>
+                </div>
+
+                {/* Profit calculator */}
+                {profit !== null && (
+                  <div className={`rounded-xl p-4 border ${profit > 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <p className="text-xs font-semibold text-gray-600 mb-3">💰 Profit Calculator</p>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <p className="text-xs text-gray-400">Supplier Cost</p>
+                        <p className="text-sm font-bold text-gray-700">Rs.{parseFloat(formData.supplier_cost).toLocaleString('en-IN')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Selling Price</p>
+                        <p className="text-sm font-bold text-gray-700">Rs.{parseFloat(formData.price).toLocaleString('en-IN')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Your Profit</p>
+                        <p className={`text-sm font-bold ${profit > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                          {profit > 0 ? '+' : ''}Rs.{profit.toLocaleString('en-IN')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`mt-3 text-center text-xs font-medium ${profit > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {profit > 0
+                        ? `✅ Margin: ${margin}% — Good to go!`
+                        : '⚠️ Selling price is lower than supplier cost — you will lose money!'}
+                    </div>
+                  </div>
+                )}
+
+                {/* Supplier info */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Supplier Info</label>
+                  <textarea name="supplier_info" value={formData.supplier_info} onChange={handleChange}
+                    placeholder="e.g. Meesho product link, IndiaMART supplier name, WhatsApp number..."
+                    rows={3} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 resize-none" />
+                  <p className="text-xs text-gray-400 mt-1">This is only visible to you — buyers will never see this.</p>
+                </div>
+
+                {/* Shipping details */}
+                <div className="space-y-3 border-t border-gray-100 pt-4">
+                  <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                    🚚 Shipping Details <span className="text-xs font-normal text-gray-400">(shown to buyers)</span>
+                  </p>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Delivery</label>
+                    <select name="delivery_days" value={formData.delivery_days} onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 bg-white text-sm">
+                      <option value="1-2 days">1–2 days (Express)</option>
+                      <option value="3-5 days">3–5 days (Fast)</option>
+                      <option value="5-10 days">5–10 days (Standard)</option>
+                      <option value="10-15 days">10–15 days</option>
+                      <option value="15-20 days">15–20 days</option>
+                      <option value="20-30 days">20–30 days</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Return Policy</label>
+                    <select name="return_policy" value={formData.return_policy} onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 bg-white text-sm">
+                      <option value="No returns">No returns</option>
+                      <option value="Contact seller within 7 days">Contact seller within 7 days</option>
+                      <option value="Exchange only within 7 days">Exchange only within 7 days</option>
+                      <option value="7 day return policy">7 day return policy</option>
+                      <option value="15 day return policy">15 day return policy</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Shipping Note <span className="text-gray-400">(optional)</span></label>
+                    <input type="text" name="shipping_note" value={formData.shipping_note} onChange={handleChange}
+                      placeholder="e.g. Free shipping across India, Shipping charges extra..."
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 text-sm" />
+                  </div>
+
+                  {/* Buyer preview */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                    <p className="text-xs font-semibold text-gray-500 mb-2">👁️ What buyers will see:</p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span>🚚</span>
+                        <p className="text-xs font-semibold text-blue-700">Dropship Item</p>
+                        <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">Ships in {formData.delivery_days}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <p className="text-xs text-gray-500">📦 Supplier ships directly to buyer</p>
+                        <p className="text-xs text-gray-500">⏱️ {formData.delivery_days}</p>
+                        <p className="text-xs text-gray-500">🔄 {formData.return_policy}</p>
+                        <p className="text-xs text-gray-500">✅ Seller verified</p>
+                      </div>
+                      {formData.shipping_note && (
+                        <p className="text-xs text-blue-600 mt-1">📝 {formData.shipping_note}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button type="submit" disabled={loading || uploading}
+              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center">
+              {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Save Changes'}
             </button>
           </form>
         </div>
