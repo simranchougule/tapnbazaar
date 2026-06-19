@@ -53,13 +53,23 @@ const ShareIcon = () => (
   </svg>
 )
 
-export default function ProductDetailClient() {
+// FIX #11: Accept server-fetched data as props so this component never
+// needs to call GET /products/:id itself — eliminating the double fetch
+// and the double view-count increment that came with it.
+export default function ProductDetailClient({
+  initialProduct = null,
+  initialRelated  = [],
+}: {
+  initialProduct?: Product | null
+  initialRelated?:  Product[]
+}) {
   const { id } = useParams()
   const router  = useRouter()
   const { user, isLoggedIn, loadFromStorage } = useAuthStore()
-  const [product, setProduct]         = useState<Product | null>(null)
-  const [related, setRelated]         = useState<Product[]>([])
-  const [loading, setLoading]         = useState(true)
+
+  const [product, setProduct]         = useState<Product | null>(initialProduct)
+  const [related, setRelated]         = useState<Product[]>(initialRelated)
+  const [loading, setLoading]         = useState(!initialProduct) // no spinner when SSR data available
   const [activeImage, setActiveImage] = useState(0)
   const [lightbox, setLightbox]       = useState(false)
   const [favorited, setFavorited]     = useState(false)
@@ -72,7 +82,11 @@ export default function ProductDetailClient() {
   const [showReport, setShowReport]   = useState(false)
 
   useEffect(() => { loadFromStorage() }, [])
-  useEffect(() => { fetchProduct() }, [])
+  useEffect(() => {
+    // Only fetch client-side when SSR data was not available
+    // (e.g. navigating directly via client-side router)
+    if (!initialProduct) { fetchProduct() }
+  }, [])
   useEffect(() => { if (isLoggedIn) fetchFavoriteStatus() }, [isLoggedIn, id])
 
   const fetchProduct = async () => {
@@ -260,6 +274,7 @@ export default function ProductDetailClient() {
               <MapPin className="w-4 h-4" />
               <span>{product.city}, {product.state}</span>
             </div>
+
             {/* Area, Pincode and View on Map */}
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
@@ -287,7 +302,7 @@ export default function ProductDetailClient() {
               )}
             </div>
 
-           <p className="text-gray-600 text-sm leading-relaxed">{product.description}</p>
+            <p className="text-gray-600 text-sm leading-relaxed">{product.description}</p>
 
             {/* Dropship shipping info */}
             {(product as any).listingType === 'dropship' && (
@@ -337,8 +352,6 @@ export default function ProductDetailClient() {
                 )}
               </div>
             )}
-
-            {/* Seller info */}
 
             {/* Seller info */}
             <Link href={'/users/' + product.user.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow">
