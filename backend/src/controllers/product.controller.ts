@@ -68,6 +68,10 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
         userId: req.user!.userId,
         categoryId,
         status: 'ACTIVE',
+        ...(area     && { area }),
+        ...(pincode  && { pincode }),
+        ...(latitude  !== undefined && latitude  !== null && latitude  !== '' && { latitude: parseFloat(latitude) }),
+        ...(longitude !== undefined && longitude !== null && longitude !== '' && { longitude: parseFloat(longitude) }),
         listingType: listingType === 'dropship' ? 'dropship' : 'local',
         ...(listingType === 'dropship' && {
           supplierInfo,
@@ -200,7 +204,7 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
 export const updateProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string
-    const { title, description, price, condition, city, state, images, status, listingType, supplierInfo, supplierCost, deliveryDays, returnPolicy, shippingNote } = req.body
+    const { title, description, price, condition, city, state, images, status, area, pincode, latitude, longitude, listingType, supplierInfo, supplierCost, deliveryDays, returnPolicy, shippingNote } = req.body
 
     const existing = await prisma.product.findUnique({ where: { id } })
     if (!existing) {
@@ -223,6 +227,10 @@ export const updateProduct = async (req: AuthRequest, res: Response): Promise<vo
         ...(state        && { state }),
         ...(images       && { images }),
         ...(status       && { status }),
+        ...(area         && { area }),
+        ...(pincode      && { pincode }),
+        ...(latitude  !== undefined && latitude  !== null && latitude  !== '' && { latitude: parseFloat(latitude) }),
+        ...(longitude !== undefined && longitude !== null && longitude !== '' && { longitude: parseFloat(longitude) }),
         ...(listingType  && { listingType: listingType === 'dropship' ? 'dropship' : 'local' }),
         ...(supplierInfo !== undefined && { supplierInfo }),
         ...(supplierCost && { supplierCost: parseFloat(supplierCost) }),
