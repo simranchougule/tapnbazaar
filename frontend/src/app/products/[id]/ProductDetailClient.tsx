@@ -81,6 +81,9 @@ export default function ProductDetailClient() {
       const res = await api.get('/products/' + id)
       setProduct(res.data.product)
       setRelated(res.data.related || [])
+      // Register exactly one real view per visit — fire-and-forget,
+      // doesn't block the page or affect loading state
+      api.post('/products/' + id + '/view').catch(() => {})
     } catch {
       toast.error('Product not found')
       router.push('/')

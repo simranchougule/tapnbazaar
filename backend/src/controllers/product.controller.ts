@@ -185,8 +185,6 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
       return
     }
 
-    await prisma.product.update({ where: { id }, data: { views: { increment: 1 } } })
-
     const related = await prisma.product.findMany({
       where: { categoryId: product.categoryId, id: { not: id }, status: 'ACTIVE' },
       include: { user: { select: { id: true, name: true, city: true } } },
@@ -198,6 +196,17 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
   } catch (error) {
     console.error('Get product error:', error)
     res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
+
+export const incrementProductView = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string
+    await prisma.product.update({ where: { id }, data: { views: { increment: 1 } } })
+    res.status(200).json({ success: true })
+  } catch {
+    // Non-critical — fail silently so a view-count hiccup never breaks the page
+    res.status(200).json({ success: false })
   }
 }
 

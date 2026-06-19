@@ -3,6 +3,7 @@ import {
   createProduct,
   getProducts,
   getProduct,
+  incrementProductView,
   updateProduct,
   deleteProduct,
   getMyProducts,
@@ -17,10 +18,11 @@ const router = Router()
 router.get('/user/my-listings', protect, getMyProducts)
 
 // Public routes
-router.get('/',         getProducts)
-router.get('/trending', getTrendingProducts)
-router.get('/nearby',   getNearbyProducts)
-router.get('/:id',      getProduct)
+router.get('/',          getProducts)
+router.get('/trending',  getTrendingProducts)
+router.get('/nearby',    getNearbyProducts)
+router.get('/:id',       getProduct)
+router.post('/:id/view', incrementProductView)
 
 // Protected routes
 router.post('/',    protect, createProduct)
