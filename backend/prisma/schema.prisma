@@ -66,24 +66,30 @@ model Category {
 }
 
 model Product {
-  id          String        @id @default(cuid())
-  title       String
-  description String
-  price       Float
-  condition   Condition     @default(GOOD)
-  status      ProductStatus @default(ACTIVE)
-  country     String        @default("India")
-  state       String
-  city        String
-  locality    String?
-  area        String?
-  pincode     String?
-  latitude    Float?
-  longitude   Float?
-  images      String[]
-  views       Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String        @id @default(cuid())
+  title         String
+  description   String
+  price         Float
+  condition     Condition     @default(GOOD)
+  status        ProductStatus @default(ACTIVE)
+  country       String        @default("India")
+  state         String
+  city          String
+  locality      String?
+  area          String?
+  pincode       String?
+  listingType   ListingType   @default(local)
+  supplierInfo  String?
+  supplierCost  Float?
+  deliveryDays  String?
+  returnPolicy  String?
+  shippingNote  String?
+  latitude      Float?
+  longitude     Float?
+  images        String[]
+  views         Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   userId      String
   categoryId  String
@@ -250,4 +256,9 @@ enum ProductStatus {
   ACTIVE
   SOLD
   INACTIVE
+}
+
+enum ListingType {
+  local
+  dropship
 }

@@ -42,6 +42,12 @@ export interface Product {
   updatedAt: string
   userId: string
   categoryId: string
+  listingType?: 'local' | 'dropship'
+  supplierInfo?: string
+  supplierCost?: number
+  deliveryDays?: string
+  returnPolicy?: string
+  shippingNote?: string
   user: {
     id: string
     name: string

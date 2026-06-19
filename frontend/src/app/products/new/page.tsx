@@ -147,10 +147,16 @@ export default function CreateProductPage() {
       setLoading(true)
       const res = await api.post('/products', {
         ...formData,
-        price:     parseFloat(formData.price),
-        latitude:  formData.latitude  ? parseFloat(formData.latitude)  : undefined,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
+        price:        parseFloat(formData.price),
+        latitude:     formData.latitude  ? parseFloat(formData.latitude)  : undefined,
+        longitude:    formData.longitude ? parseFloat(formData.longitude) : undefined,
         images,
+        listingType:  formData.listing_type,
+        supplierInfo: formData.supplier_info,
+        supplierCost: formData.supplier_cost ? parseFloat(formData.supplier_cost) : undefined,
+        deliveryDays: formData.delivery_days,
+        returnPolicy: formData.return_policy,
+        shippingNote: formData.shipping_note,
       })
       if (res.data.success) {
         toast.success('Listing posted successfully!')

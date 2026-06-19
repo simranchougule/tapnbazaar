@@ -5,7 +5,7 @@ import { sendNotification } from '../services/notificationService'
 
 export const createProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { title, description, price, condition, categoryId, city, state, images, latitude, longitude, area, pincode } = req.body
+    const { title, description, price, condition, categoryId, city, state, images, latitude, longitude, area, pincode, listingType, supplierInfo, supplierCost, deliveryDays, returnPolicy, shippingNote } = req.body
 
     if (!title || !description || !price || !categoryId || !city || !state) {
       res.status(400).json({ success: false, message: 'Please provide all required fields' })
@@ -17,6 +17,10 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
     }
     if (parseFloat(price) <= 0) {
       res.status(400).json({ success: false, message: 'Price must be greater than 0' })
+      return
+    }
+    if (listingType === 'dropship' && !supplierCost) {
+      res.status(400).json({ success: false, message: 'Supplier cost is required for dropship listings' })
       return
     }
 
@@ -64,6 +68,14 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
         userId: req.user!.userId,
         categoryId,
         status: 'ACTIVE',
+        listingType: listingType === 'dropship' ? 'dropship' : 'local',
+        ...(listingType === 'dropship' && {
+          supplierInfo,
+          supplierCost: supplierCost ? parseFloat(supplierCost) : undefined,
+          deliveryDays: deliveryDays || '5-10 days',
+        }),
+        ...(returnPolicy && { returnPolicy }),
+        ...(shippingNote && { shippingNote }),
       },
       include: {
         user:     { select: { id: true, name: true, avatar: true, phone: true, city: true } },
@@ -188,7 +200,7 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
 export const updateProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string
-    const { title, description, price, condition, city, state, images, status } = req.body
+    const { title, description, price, condition, city, state, images, status, listingType, supplierInfo, supplierCost, deliveryDays, returnPolicy, shippingNote } = req.body
 
     const existing = await prisma.product.findUnique({ where: { id } })
     if (!existing) {
@@ -203,14 +215,20 @@ export const updateProduct = async (req: AuthRequest, res: Response): Promise<vo
     const product = await prisma.product.update({
       where: { id },
       data: {
-        ...(title       && { title }),
-        ...(description && { description }),
-        ...(price       && { price: parseFloat(price) }),
-        ...(condition   && { condition }),
-        ...(city        && { city }),
-        ...(state       && { state }),
-        ...(images      && { images }),
-        ...(status      && { status }),
+        ...(title        && { title }),
+        ...(description  && { description }),
+        ...(price        && { price: parseFloat(price) }),
+        ...(condition    && { condition }),
+        ...(city         && { city }),
+        ...(state        && { state }),
+        ...(images       && { images }),
+        ...(status       && { status }),
+        ...(listingType  && { listingType: listingType === 'dropship' ? 'dropship' : 'local' }),
+        ...(supplierInfo !== undefined && { supplierInfo }),
+        ...(supplierCost && { supplierCost: parseFloat(supplierCost) }),
+        ...(deliveryDays && { deliveryDays }),
+        ...(returnPolicy && { returnPolicy }),
+        ...(shippingNote !== undefined && { shippingNote }),
       },
       include: {
         user:     { select: { id: true, name: true, avatar: true } },

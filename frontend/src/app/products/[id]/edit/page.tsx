@@ -134,8 +134,14 @@ export default function EditProductPage() {
       setLoading(true)
       const res = await api.put('/products/' + id, {
         ...formData,
-        price: parseFloat(formData.price),
+        price:        parseFloat(formData.price),
         images,
+        listingType:  formData.listing_type,
+        supplierInfo: formData.supplier_info,
+        supplierCost: formData.supplier_cost ? parseFloat(formData.supplier_cost) : undefined,
+        deliveryDays: formData.delivery_days,
+        returnPolicy: formData.return_policy,
+        shippingNote: formData.shipping_note,
       })
       if (res.data.success) {
         toast.success('Listing updated successfully!')
