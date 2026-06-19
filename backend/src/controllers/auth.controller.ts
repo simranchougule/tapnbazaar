@@ -79,9 +79,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ success: false, message: 'Invalid email or password' }); return
     }
 
-    const isPasswordCorrect = await bcrypt.compare(password, user.password)
+   const isPasswordCorrect = await bcrypt.compare(password, user.password)
     if (!isPasswordCorrect) {
       res.status(401).json({ success: false, message: 'Invalid email or password' }); return
+    }
+
+    if (user.isBanned) {
+      res.status(403).json({ success: false, message: 'This account has been suspended.' }); return
     }
 
     const token = generateToken({ userId: user.id, email: user.email })
