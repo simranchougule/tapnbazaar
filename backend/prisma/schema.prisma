@@ -8,28 +8,30 @@ datasource db {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  password          String
-  name              String
-  phone             String?
-  avatar            String?
-  bio               String?
-  city              String?
-  state             String?
-  preferredCity     String?
-  preferredLocality String?
-  isVerified        Boolean   @default(false)
-  isAdmin           Boolean   @default(false)
-  phoneVerified     Boolean   @default(false)
-  emailVerified     Boolean   @default(false)
-  isTrusted         Boolean   @default(false)
-  isBanned          Boolean   @default(false)
-  emailVerifyToken  String?
-  phoneOtp          String?
-  phoneOtpExpiry    DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  password             String
+  name                 String
+  phone                String?
+  avatar               String?
+  bio                  String?
+  city                 String?
+  state                String?
+  preferredCity        String?
+  preferredLocality    String?
+  isVerified           Boolean   @default(false)
+  isAdmin              Boolean   @default(false)
+  phoneVerified        Boolean   @default(false)
+  emailVerified        Boolean   @default(false)
+  isTrusted            Boolean   @default(false)
+  isBanned             Boolean   @default(false)
+  emailVerifyToken     String?
+  resetPasswordToken   String?
+  resetPasswordExpiry  DateTime?
+  phoneOtp             String?
+  phoneOtpExpiry       DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   products         Product[]
   sentMessages     Message[]        @relation("SentMessages")
