@@ -26,10 +26,15 @@ api.interceptors.request.use((config) => {
 
 // This runs after every response
 // If token is expired (401) → redirect to login
+// Exception: a 401 from the login endpoint itself just means
+// "wrong password" — that's not a session expiry, so let the
+// login page handle it normally with an inline error instead
+// of force-reloading the page.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.includes('/auth/login')
+    if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'
