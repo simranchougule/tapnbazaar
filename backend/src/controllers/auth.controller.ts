@@ -32,7 +32,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12)
-    const emailVerifyToken = crypto.randomBytes(32).toString('hex')
+    const emailVerifyToken  = crypto.randomBytes(32).toString('hex')
+    const emailVerifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
     const user = await prisma.user.create({
       data: {
         name,
@@ -42,6 +43,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         city: city || null,
         state: state || null,
         emailVerifyToken,
+        emailVerifyExpiry,
       },
     })
 
@@ -183,9 +185,14 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     const user = await prisma.user.findFirst({ where: { emailVerifyToken: token as string } })
     if (!user) { res.status(400).json({ success: false, message: 'Invalid or expired token' }); return }
 
+    if (!user.emailVerifyExpiry || new Date() > user.emailVerifyExpiry) {
+      res.status(400).json({ success: false, message: 'This verification link has expired. Please request a new one.' })
+      return
+    }
+
     await prisma.user.update({
       where: { id: user.id },
-      data:  { emailVerified: true, isVerified: true, emailVerifyToken: null },
+      data:  { emailVerified: true, isVerified: true, emailVerifyToken: null, emailVerifyExpiry: null },
     })
 
     res.status(200).json({ success: true, message: 'Email verified successfully!' })

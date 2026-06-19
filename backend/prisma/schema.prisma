@@ -26,6 +26,7 @@ model User {
   isTrusted            Boolean   @default(false)
   isBanned             Boolean   @default(false)
   emailVerifyToken     String?
+  emailVerifyExpiry    DateTime?
   resetPasswordToken   String?
   resetPasswordExpiry  DateTime?
   phoneOtp             String?
