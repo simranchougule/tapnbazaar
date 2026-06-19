@@ -211,9 +211,9 @@ export const sendPhoneOtp = async (req: AuthRequest, res: Response): Promise<voi
     const otp    = Math.floor(100000 + Math.random() * 900000).toString()
     const expiry = new Date(Date.now() + 10 * 60 * 1000)
 
-    await prisma.user.update({
+await prisma.user.update({
       where: { id: req.user!.userId },
-      data:  { phone, phoneOtp: otp, phoneOtpExpiry: expiry },
+      data:  { phone, phoneOtp: otp, phoneOtpExpiry: expiry, phoneOtpAttempts: 0 },
     })
 
     // Try SMS first, fall back to email
@@ -237,19 +237,26 @@ export const verifyPhoneOtp = async (req: AuthRequest, res: Response): Promise<v
     const user = await prisma.user.findUnique({ where: { id: req.user!.userId } })
     if (!user) { res.status(404).json({ success: false, message: 'User not found' }); return }
 
-    if (!user.phoneOtp || !user.phoneOtpExpiry) {
+if (!user.phoneOtp || !user.phoneOtpExpiry) {
       res.status(400).json({ success: false, message: 'No OTP found. Please request a new one.' }); return
     }
     if (new Date() > user.phoneOtpExpiry) {
       res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' }); return
     }
+    if (user.phoneOtpAttempts >= 5) {
+      res.status(429).json({ success: false, message: 'Too many failed attempts. Please request a new OTP.' }); return
+    }
     if (user.phoneOtp !== otp) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data:  { phoneOtpAttempts: { increment: 1 } },
+      })
       res.status(400).json({ success: false, message: 'Invalid OTP' }); return
     }
 
     const updated = await prisma.user.update({
       where: { id: user.id },
-      data:  { phoneVerified: true, phoneOtp: null, phoneOtpExpiry: null },
+      data:  { phoneVerified: true, phoneOtp: null, phoneOtpExpiry: null, phoneOtpAttempts: 0 },
     })
 
     res.status(200).json({
