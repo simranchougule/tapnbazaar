@@ -1,0 +1,313 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.changePassword = exports.verifyPhoneOtp = exports.sendPhoneOtp = exports.verifyEmail = exports.updateProfile = exports.getPublicProfile = exports.logout = exports.getMe = exports.login = exports.register = void 0;
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const crypto_1 = __importDefault(require("crypto"));
+const prisma_1 = require("../lib/prisma");
+const jwt_1 = require("../utils/jwt");
+const emailService_1 = require("../services/emailService");
+const DISPOSABLE_DOMAINS = ['mailinator.com', 'guerrillamail.com', '10minutemail.com', 'throwam.com', 'tempmail.com', 'yopmail.com', 'sharklasers.com', 'trashmail.com'];
+const register = async (req, res) => {
+    try {
+        const { name, email, password, phone, city, state } = req.body;
+        if (!name || !email || !password) {
+            res.status(400).json({ success: false, message: 'Please provide name, email and password' });
+            return;
+        }
+        if (password.length < 6) {
+            res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            res.status(400).json({ success: false, message: 'Please provide a valid email address' });
+            return;
+        }
+        const domain = email.toLowerCase().split('@')[1];
+        if (DISPOSABLE_DOMAINS.includes(domain)) {
+            res.status(400).json({ success: false, message: 'Disposable email addresses are not allowed' });
+            return;
+        }
+        const existingUser = await prisma_1.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+        if (existingUser) {
+            res.status(400).json({ success: false, message: 'An account with this email already exists' });
+            return;
+        }
+        const hashedPassword = await bcryptjs_1.default.hash(password, 12);
+        const emailVerifyToken = crypto_1.default.randomBytes(32).toString('hex');
+        const user = await prisma_1.prisma.user.create({
+            data: {
+                name,
+                email: email.toLowerCase(),
+                password: hashedPassword,
+                phone: phone || null,
+                city: city || null,
+                state: state || null,
+                emailVerifyToken,
+            },
+        });
+        (0, emailService_1.sendEmailVerification)(user.email, emailVerifyToken).catch(() => { });
+        const token = (0, jwt_1.generateToken)({ userId: user.id, email: user.email });
+        res.status(201).json({
+            success: true,
+            message: 'Account created successfully!',
+            token,
+            user: {
+                id: user.id, name: user.name, email: user.email, phone: user.phone,
+                avatar: user.avatar, city: user.city, state: user.state,
+                isVerified: user.isVerified, isAdmin: user.isAdmin,
+                phoneVerified: user.phoneVerified, emailVerified: user.emailVerified,
+                createdAt: user.createdAt,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Register error:', error);
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+};
+exports.register = register;
+const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            res.status(400).json({ success: false, message: 'Please provide email and password' });
+            return;
+        }
+        const user = await prisma_1.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+        if (!user) {
+            res.status(401).json({ success: false, message: 'Invalid email or password' });
+            return;
+        }
+        const isPasswordCorrect = await bcryptjs_1.default.compare(password, user.password);
+        if (!isPasswordCorrect) {
+            res.status(401).json({ success: false, message: 'Invalid email or password' });
+            return;
+        }
+        if (user.isBanned) {
+            res.status(403).json({ success: false, message: 'This account has been suspended.' });
+            return;
+        }
+        const token = (0, jwt_1.generateToken)({ userId: user.id, email: user.email });
+        res.status(200).json({
+            success: true,
+            message: 'Logged in successfully!',
+            token,
+            user: {
+                id: user.id, name: user.name, email: user.email, phone: user.phone,
+                avatar: user.avatar, city: user.city, state: user.state,
+                isVerified: user.isVerified, isAdmin: user.isAdmin,
+                phoneVerified: user.phoneVerified, emailVerified: user.emailVerified,
+                createdAt: user.createdAt,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+    }
+};
+exports.login = login;
+const getMe = async (req, res) => {
+    try {
+        const user = await prisma_1.prisma.user.findUnique({
+            where: { id: req.user?.userId },
+            select: {
+                id: true, name: true, email: true, phone: true, avatar: true,
+                bio: true, city: true, state: true, isVerified: true, createdAt: true,
+                _count: { select: { products: true } },
+            },
+        });
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+        res.status(200).json({ success: true, user });
+    }
+    catch (error) {
+        console.error('Get me error:', error);
+        res.status(500).json({ success: false, message: 'Something went wrong.' });
+    }
+};
+exports.getMe = getMe;
+const logout = async (req, res) => {
+    res.status(200).json({ success: true, message: 'Logged out successfully!' });
+};
+exports.logout = logout;
+const getPublicProfile = async (req, res) => {
+    try {
+        const user = await prisma_1.prisma.user.findUnique({
+            where: { id: req.params.id },
+            select: {
+                id: true, name: true, avatar: true, city: true, state: true, createdAt: true,
+                _count: { select: { products: true } },
+                products: {
+                    where: { status: 'ACTIVE' },
+                    include: { category: { select: { name: true, slug: true } } },
+                    orderBy: { createdAt: 'desc' },
+                    take: 20,
+                },
+            },
+        });
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+        res.status(200).json({ success: true, user });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: 'Something went wrong.' });
+    }
+};
+exports.getPublicProfile = getPublicProfile;
+const updateProfile = async (req, res) => {
+    try {
+        const { name, phone, city, state, bio } = req.body;
+        const user = await prisma_1.prisma.user.update({
+            where: { id: req.user.userId },
+            data: {
+                ...(name && { name }),
+                ...(phone !== undefined && { phone: phone || null }),
+                ...(city !== undefined && { city: city || null }),
+                ...(state !== undefined && { state: state || null }),
+                ...(bio !== undefined && { bio: bio || null }),
+            },
+        });
+        res.status(200).json({
+            success: true,
+            message: 'Profile updated!',
+            user: { id: user.id, name: user.name, email: user.email, phone: user.phone, avatar: user.avatar, city: user.city, state: user.state, isVerified: user.isVerified },
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: 'Something went wrong.' });
+    }
+};
+exports.updateProfile = updateProfile;
+const verifyEmail = async (req, res) => {
+    try {
+        const { token } = req.query;
+        if (!token) {
+            res.status(400).json({ success: false, message: 'Token is required' });
+            return;
+        }
+        const user = await prisma_1.prisma.user.findFirst({ where: { emailVerifyToken: token } });
+        if (!user) {
+            res.status(400).json({ success: false, message: 'Invalid or expired token' });
+            return;
+        }
+        await prisma_1.prisma.user.update({
+            where: { id: user.id },
+            data: { emailVerified: true, isVerified: true, emailVerifyToken: null },
+        });
+        res.status(200).json({ success: true, message: 'Email verified successfully!' });
+    }
+    catch {
+        res.status(500).json({ success: false, message: 'Something went wrong.' });
+    }
+};
+exports.verifyEmail = verifyEmail;
+const sendPhoneOtp = async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone || !/^\d{10}$/.test(phone.replace(/\s/g, ''))) {
+            res.status(400).json({ success: false, message: 'Please provide a valid 10-digit phone number' });
+            return;
+        }
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiry = new Date(Date.now() + 10 * 60 * 1000);
+        await prisma_1.prisma.user.update({
+            where: { id: req.user.userId },
+            data: { phone, phoneOtp: otp, phoneOtpExpiry: expiry },
+        });
+        // Try SMS first, fall back to email
+        const smsSent = await (0, emailService_1.sendSmsOtp)(phone.replace(/\s/g, ''), otp);
+        if (!smsSent) {
+            const user = await prisma_1.prisma.user.findUnique({ where: { id: req.user.userId }, select: { email: true } });
+            if (user)
+                await (0, emailService_1.sendOtpEmail)(user.email, otp).catch(() => { });
+        }
+        res.status(200).json({ success: true, message: smsSent ? 'OTP sent to your phone' : 'OTP sent to your registered email' });
+    }
+    catch {
+        res.status(500).json({ success: false, message: 'Something went wrong.' });
+    }
+};
+exports.sendPhoneOtp = sendPhoneOtp;
+const verifyPhoneOtp = async (req, res) => {
+    try {
+        const { otp } = req.body;
+        if (!otp) {
+            res.status(400).json({ success: false, message: 'OTP is required' });
+            return;
+        }
+        const user = await prisma_1.prisma.user.findUnique({ where: { id: req.user.userId } });
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+        if (!user.phoneOtp || !user.phoneOtpExpiry) {
+            res.status(400).json({ success: false, message: 'No OTP found. Please request a new one.' });
+            return;
+        }
+        if (new Date() > user.phoneOtpExpiry) {
+            res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+            return;
+        }
+        if (user.phoneOtp !== otp) {
+            res.status(400).json({ success: false, message: 'Invalid OTP' });
+            return;
+        }
+        const updated = await prisma_1.prisma.user.update({
+            where: { id: user.id },
+            data: { phoneVerified: true, phoneOtp: null, phoneOtpExpiry: null },
+        });
+        res.status(200).json({
+            success: true,
+            message: 'Phone number verified!',
+            user: {
+                id: updated.id, name: updated.name, email: updated.email, phone: updated.phone,
+                avatar: updated.avatar, city: updated.city, state: updated.state,
+                isVerified: updated.isVerified, isAdmin: updated.isAdmin,
+                phoneVerified: updated.phoneVerified, emailVerified: updated.emailVerified,
+            },
+        });
+    }
+    catch {
+        res.status(500).json({ success: false, message: 'Something went wrong.' });
+    }
+};
+exports.verifyPhoneOtp = verifyPhoneOtp;
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) {
+            res.status(400).json({ success: false, message: 'All fields are required' });
+            return;
+        }
+        if (newPassword.length < 6) {
+            res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+            return;
+        }
+        const user = await prisma_1.prisma.user.findUnique({ where: { id: req.user.userId } });
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+        const valid = await bcryptjs_1.default.compare(currentPassword, user.password);
+        if (!valid) {
+            res.status(400).json({ success: false, message: 'Current password is incorrect' });
+            return;
+        }
+        const hashed = await bcryptjs_1.default.hash(newPassword, 12);
+        await prisma_1.prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
+        res.status(200).json({ success: true, message: 'Password updated successfully!' });
+    }
+    catch {
+        res.status(500).json({ success: false, message: 'Something went wrong.' });
+    }
+};
+exports.changePassword = changePassword;
+//# sourceMappingURL=auth.controller.js.map

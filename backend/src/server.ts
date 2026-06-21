@@ -1,5 +1,10 @@
 import dotenv from 'dotenv'
-dotenv.config()
+const envResult = dotenv.config()
+if (envResult.error) {
+  console.error('⚠️  Failed to load .env file:', envResult.error.message)
+} else if (!process.env.DATABASE_URL) {
+  console.error('⚠️  .env loaded but DATABASE_URL is missing — check the file for typos')
+}
 
 import express from 'express'
 import { createServer } from 'http'
