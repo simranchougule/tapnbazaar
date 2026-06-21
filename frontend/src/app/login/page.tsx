@@ -55,19 +55,11 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/">
-            <div className="inline-flex items-center gap-2">
-              <div className="bg-orange-500 text-white font-bold text-2xl px-4 py-2 rounded-xl">
-                TB
-              </div>
-              <span className="font-bold text-2xl text-gray-800">
-                TapnBazaar
-              </span>
-            </div>
+          <Link href="/" className="inline-block">
+            <img src="/tapnbazaar-logo.png" alt="TapnBazaar" className="h-16 w-40 object-contain mx-auto" />
           </Link>
           <p className="text-gray-500 mt-2">Login to your account</p>
         </div>
-
         {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
