@@ -35,9 +35,9 @@ export const sendSmsOtp = async (phone: string, otp: string): Promise<boolean> =
       method: 'POST',
       headers: { authorization: apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        route:    'otp',
+        route:            'otp',
         variables_values: otp,
-        numbers:  phone,
+        numbers:          phone,
       }),
     })
     const data = await res.json() as { return?: boolean }
@@ -58,6 +58,23 @@ export const sendOtpEmail = async (email: string, otp: string) => {
         <p style="color:#555;margin-bottom:16px">Your one-time password is:</p>
         <div style="font-size:36px;font-weight:700;letter-spacing:8px;color:#111;margin:16px 0">${otp}</div>
         <p style="color:#aaa;font-size:12px;margin-top:24px">Expires in 10 minutes. Do not share this with anyone.</p>
+      </div>`,
+  })
+}
+
+// Fix #16: Password reset email — sends a link to the reset-password page
+export const sendPasswordResetEmail = async (email: string, token: string) => {
+  const url = `${process.env.FRONTEND_URL}/reset-password?token=${token}`
+  await transporter.sendMail({
+    from:    `"TapnBazaar" <${process.env.SMTP_USER}>`,
+    to:      email,
+    subject: 'Reset your TapnBazaar password',
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#fff;border-radius:12px;border:1px solid #f0f0f0">
+        <h2 style="color:#f97316;margin-bottom:8px">Reset your password</h2>
+        <p style="color:#555;margin-bottom:24px">We received a request to reset the password for your TapnBazaar account. Click the button below to set a new password.</p>
+        <a href="${url}" style="display:inline-block;background:#f97316;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600">Reset Password</a>
+        <p style="color:#aaa;font-size:12px;margin-top:24px">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.</p>
       </div>`,
   })
 }
