@@ -1,5 +1,9 @@
 'use client'
 
+// Fix #14 — Admin page client-side guard now checks user.isAdmin, not just isLoggedIn.
+// Previously any logged-in user could see the admin shell briefly before the
+// API returned 403. Now non-admin users are bounced to / immediately.
+
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -53,7 +57,8 @@ interface AdminReport {
 
 export default function AdminPage() {
   const router = useRouter()
-  const { isLoggedIn, loadFromStorage } = useAuthStore()
+  // Fix #14: read user from store so we can check isAdmin, not just isLoggedIn
+  const { isLoggedIn, user, loadFromStorage } = useAuthStore()
   const [tab, setTab]           = useState<'stats' | 'users' | 'products' | 'reports'>('stats')
   const [stats, setStats]       = useState<Stats | null>(null)
   const [users, setUsers]       = useState<AdminUser[]>([])
@@ -64,9 +69,11 @@ export default function AdminPage() {
   useEffect(() => { loadFromStorage() }, [])
 
   useEffect(() => {
+    // Fix #14: bounce non-admin users immediately — don't wait for API 403
     if (!isLoggedIn) { router.push('/login'); return }
+    if (isLoggedIn && !user?.isAdmin) { router.push('/'); return }
     fetchStats()
-  }, [isLoggedIn])
+  }, [isLoggedIn, user])
 
   useEffect(() => {
     if (tab === 'users'    && users.length === 0)    fetchUsers()
@@ -153,9 +160,9 @@ export default function AdminPage() {
         {tab === 'stats' && stats && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
-              { label: 'Total Users',     value: stats.totalUsers,     icon: <Users className="w-5 h-5 text-blue-500" />,      bg: 'bg-blue-50' },
-              { label: 'Total Listings',  value: stats.totalProducts,  icon: <Package className="w-5 h-5 text-orange-500" />,   bg: 'bg-orange-50' },
-              { label: 'Active Listings', value: stats.activeProducts, icon: <TrendingUp className="w-5 h-5 text-green-500" />, bg: 'bg-green-50' },
+              { label: 'Total Users',     value: stats.totalUsers,     icon: <Users className="w-5 h-5 text-blue-500" />,       bg: 'bg-blue-50' },
+              { label: 'Total Listings',  value: stats.totalProducts,  icon: <Package className="w-5 h-5 text-orange-500" />,    bg: 'bg-orange-50' },
+              { label: 'Active Listings', value: stats.activeProducts, icon: <TrendingUp className="w-5 h-5 text-green-500" />,  bg: 'bg-green-50' },
               { label: 'Sold',            value: stats.soldProducts,   icon: <ShieldCheck className="w-5 h-5 text-purple-500" />, bg: 'bg-purple-50' },
               { label: 'Messages',        value: stats.totalMessages,  icon: <MessageCircle className="w-5 h-5 text-pink-500" />, bg: 'bg-pink-50' },
             ].map(s => (
