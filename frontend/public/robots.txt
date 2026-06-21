@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Keep private/user-specific routes out of search indexes
+Disallow: /admin
+Disallow: /profile
+Disallow: /chats
+Disallow: /notifications
+Disallow: /favorites
+Disallow: /products/new
+Disallow: /reset-password
+
+Sitemap: https://tapnbazaar.com/sitemap.xml
