@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
-import Footer from '@/components/layout/Footer'
+import ConditionalFooter from '@/components/layout/ConditionalFooter'
 import BottomNav from '@/components/layout/BottomNav'
 
 const inter = Inter({
@@ -41,7 +41,7 @@ export default function RootLayout({
           <main className="flex-1 pb-16 sm:pb-0">
             {children}
           </main>
-          <Footer />
+          <ConditionalFooter />
           <BottomNav />
         </div>
       </body>
