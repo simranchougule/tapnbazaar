@@ -53,10 +53,12 @@ app.use(express.urlencoded({ extended: true }))
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { success: false, message: 'Too many attempts, please try again after 15 minutes.' } })
 const otpLimiter  = rateLimit({ windowMs: 10 * 60 * 1000, max: 10, message: { success: false, message: 'Too many OTP requests, please try again after 10 minutes.' } })
 const apiLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 })
-app.use('/api/auth/login',      authLimiter)
-app.use('/api/auth/register',   authLimiter)
-app.use('/api/auth/send-otp',   otpLimiter)
-app.use('/api/auth/verify-otp', otpLimiter)
+const viewLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, message: { success: false, message: 'Too many requests.' } })
+app.use('/api/auth/login',        authLimiter)
+app.use('/api/auth/register',     authLimiter)
+app.use('/api/auth/send-otp',     otpLimiter)
+app.use('/api/auth/verify-otp',   otpLimiter)
+app.use('/api/products/:id/view', viewLimiter)
 app.use('/api/', apiLimiter)
 
 // ─── REST ROUTES ─────────────────────────────────────────────────────────────
@@ -113,36 +115,34 @@ io.on('connection', (socket) => {
       const { chatId, content } = data
       if (!content?.trim()) return
 
-      const participant = await prisma.chatParticipant.findUnique({
-        where: { chatId_userId: { chatId, userId } },
+      // Single query: verify membership + get other participant in one round-trip
+      const chatData = await prisma.chat.findUnique({
+        where:   { id: chatId },
+        include: { participants: { select: { userId: true } } },
       })
-      if (!participant) return
+      if (!chatData) return
 
-      const other = await prisma.chatParticipant.findFirst({
-        where: { chatId, userId: { not: userId } },
-      })
-      if (!other) return
+      const participantIds = chatData.participants.map((p: { userId: string }) => p.userId)
+      if (!participantIds.includes(userId)) return
+
+      const otherUserId = participantIds.find((id: string) => id !== userId)
+      if (!otherUserId) return
 
       const message = await prisma.message.create({
         data: {
           chatId,
           content:    content.trim(),
           senderId:   userId,
-          receiverId: other.userId,
+          receiverId: otherUserId,
         },
         include: { sender: { select: { id: true, name: true, avatar: true } } },
       })
 
       io.to(`chat:${chatId}`).emit('new_message', message)
-      io.to(`user:${other.userId}`).emit('unread_update')
+      io.to(`user:${otherUserId}`).emit('unread_update')
 
-      // ── New message notification ──────────────────────────────────────────
-      const chat = await prisma.chat.findUnique({
-        where:   { id: chatId },
-        include: { product: { select: { title: true } } },
-      })
       await sendNotification({
-        userId: other.userId,
+        userId: otherUserId,
         type:   'new_message',
         title:  `New message from ${message.sender.name}`,
         body:   `"${content.trim().slice(0, 60)}${content.length > 60 ? '…' : ''}"`,

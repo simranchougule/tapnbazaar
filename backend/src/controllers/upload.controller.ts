@@ -1,6 +1,7 @@
 import { Response } from 'express'
 import { v2 as cloudinary } from 'cloudinary'
 import { AuthRequest } from '../middleware/auth.middleware'
+import { validateMagicBytes } from '../middleware/upload.middleware'
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -15,6 +16,10 @@ export const uploadSingleImage = async (
   try {
     if (!req.file) {
       res.status(400).json({ success: false, message: 'No image provided' })
+      return
+    }
+    if (!validateMagicBytes(req.file)) {
+      res.status(400).json({ success: false, message: 'Invalid image file' })
       return
     }
 

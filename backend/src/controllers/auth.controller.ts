@@ -247,9 +247,11 @@ export const sendPhoneOtp = async (req: AuthRequest, res: Response): Promise<voi
       console.log('==================================\n')
     }
 
+    const hashedOtp = await bcrypt.hash(otp, 10)
+
 await prisma.user.update({
       where: { id: req.user!.userId },
-      data:  { phone, phoneOtp: otp, phoneOtpExpiry: expiry, phoneOtpAttempts: 0 },
+      data:  { phone, phoneOtp: hashedOtp, phoneOtpExpiry: expiry, phoneOtpAttempts: 0 },
     })
 
     // Send OTP via SMS
@@ -296,7 +298,8 @@ if (!user.phoneOtp || !user.phoneOtpExpiry) {
     if (user.phoneOtpAttempts >= 5) {
       res.status(429).json({ success: false, message: 'Too many failed attempts. Please request a new OTP.' }); return
     }
-    if (user.phoneOtp !== otp) {
+    const otpValid = await bcrypt.compare(otp, user.phoneOtp)
+    if (!otpValid) {
       await prisma.user.update({
         where: { id: user.id },
         data:  { phoneOtpAttempts: { increment: 1 } },
