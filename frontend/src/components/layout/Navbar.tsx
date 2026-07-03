@@ -164,6 +164,9 @@ export default function Navbar() {
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMobileMenu(!mobileMenu)}
+                aria-label="Toggle navigation menu"
+                aria-expanded={mobileMenu}
+                aria-controls="mobile-menu"
                 className="md:hidden p-2.5 text-gray-500 hover:bg-slate-50 rounded-xl transition-colors ml-1"
               >
                 {mobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -175,7 +178,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenu && (
-        <div className="bg-white border-b border-gray-100 md:hidden">
+        <div id="mobile-menu" className="bg-white border-b border-gray-100 md:hidden">
           <div className="px-4 py-3 space-y-3">
             {isLoggedIn ? (
               <div className="grid grid-cols-4 gap-2">

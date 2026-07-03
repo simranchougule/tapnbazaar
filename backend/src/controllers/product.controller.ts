@@ -11,12 +11,20 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
       res.status(400).json({ success: false, message: 'Please provide all required fields' })
       return
     }
-    if (title.trim().length < 3) {
-      res.status(400).json({ success: false, message: 'Title must be at least 3 characters' })
+    if (typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 150) {
+      res.status(400).json({ success: false, message: 'Title must be between 3 and 150 characters' })
       return
     }
-    if (parseFloat(price) <= 0) {
-      res.status(400).json({ success: false, message: 'Price must be greater than 0' })
+    if (typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 5000) {
+      res.status(400).json({ success: false, message: 'Description must be between 10 and 5000 characters' })
+      return
+    }
+    if (isNaN(parseFloat(price)) || parseFloat(price) <= 0 || parseFloat(price) > 10000000) {
+      res.status(400).json({ success: false, message: 'Price must be a positive number up to 1 crore' })
+      return
+    }
+    if (city && (typeof city !== 'string' || city.length > 100)) {
+      res.status(400).json({ success: false, message: 'Invalid city' })
       return
     }
     if (listingType === 'dropship' && !supplierCost) {

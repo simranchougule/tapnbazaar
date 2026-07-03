@@ -29,6 +29,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   return {
     title,
     description,
+    alternates: { canonical: `/products/${product.id}` },
     openGraph: {
       title,
       description,
@@ -43,9 +44,40 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   }
 }
 
+function ProductJsonLd({ product }: { product: Product }) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description,
+    image: product.images,
+    offers: {
+      '@type': 'Offer',
+      price: product.price,
+      priceCurrency: 'INR',
+      availability: product.status === 'ACTIVE'
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/SoldOut',
+      seller: {
+        '@type': 'Person',
+        name: product.user.name,
+      },
+    },
+  }
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
 export default async function ProductDetailPage({ params }: { params: { id: string } }) {
   const data = await fetchProductData(params.id)
-  // Pass the server-fetched data as props so the client component
-  // does not need to re-fetch — eliminating the double view-count increment.
-  return <ProductDetailClient initialProduct={data?.product ?? null} initialRelated={data?.related ?? []} />
+  return (
+    <>
+      {data?.product && <ProductJsonLd product={data.product} />}
+      <ProductDetailClient initialProduct={data?.product ?? null} initialRelated={data?.related ?? []} />
+    </>
+  )
 }

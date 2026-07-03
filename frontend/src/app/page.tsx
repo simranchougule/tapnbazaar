@@ -327,7 +327,7 @@ function HomeContent() {
           </div>
 
           {/* Search bar */}
-          <form onSubmit={handleSearch} className="flex gap-3">
+          <form onSubmit={handleSearch} role="search" aria-label="Search listings" className="flex gap-3">
             <div className="flex w-full rounded-2xl border border-white/30 bg-white shadow-lg focus-within:ring-2 focus-within:ring-white/50 transition-all overflow-hidden">
               <input
                 type="text"

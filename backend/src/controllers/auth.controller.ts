@@ -14,6 +14,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     if (!name || !email || !password) {
       res.status(400).json({ success: false, message: 'Please provide name, email and password' }); return
     }
+    if (typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 100) {
+      res.status(400).json({ success: false, message: 'Name must be between 2 and 100 characters' }); return
+    }
     if (password.length < 6) {
       res.status(400).json({ success: false, message: 'Password must be at least 6 characters' }); return
     }

@@ -12,9 +12,18 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tapnbazaar.com'
+
 export const metadata: Metadata = {
   title: 'TapnBazaar - Buy New, Sell Used. All in One Place',
-  description: 'Buy New, Sell Used. All in One Place — TapnBazaar',
+  description: 'Buy New, Sell Used. All in One Place — Safe, simple and free across India.',
+  metadataBase: new URL(BASE_URL),
+  alternates: { canonical: '/' },
+  openGraph: {
+    siteName: 'TapnBazaar',
+    type: 'website',
+    locale: 'en_IN',
+  },
 }
 
 export const viewport: Viewport = {
