@@ -61,11 +61,6 @@ export default function SettingsPage() {
     if (saved) document.documentElement.lang = saved
   }, [])
 
-  const handleSaveLanguage = () => {
-    const label = INDIAN_LANGUAGES.find(l => l.value === language)?.label || language
-    toast.success(`Language set to ${label}`)
-  }
-
   const [addresses, setAddresses] = useState<string[]>([])
   const [newAddress, setNewAddress] = useState('')
 
@@ -195,7 +190,7 @@ export default function SettingsPage() {
       case 'language':
         return (
           <div className="space-y-2 max-w-sm">
-            <label className="block text-xs font-medium text-gray-600 mb-2">Preferred Language</label>
+            <p className="text-xs text-gray-500 mb-3">Select a language — the page will reload and translate automatically.</p>
             <div className="max-h-96 overflow-y-auto space-y-2 pr-1">
               {INDIAN_LANGUAGES.map(opt => (
                 <label key={opt.value} className={'flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-colors ' +
@@ -203,13 +198,12 @@ export default function SettingsPage() {
                   <input type="radio" name="language" value={opt.value} checked={language === opt.value}
                     onChange={() => setLanguage(opt.value)} className="accent-orange-500" />
                   <span className="text-sm text-gray-700">{opt.label}</span>
+                  {language === opt.value && (
+                    <span className="ml-auto text-xs text-orange-500 font-medium">Active</span>
+                  )}
                 </label>
               ))}
             </div>
-            <button onClick={handleSaveLanguage}
-              className="mt-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors">
-              Save
-            </button>
           </div>
         )
 

@@ -42,23 +42,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google Translate — hidden widget, used programmatically */}
-        <Script
-          src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-          strategy="afterInteractive"
-        />
-        <Script id="google-translate-init" strategy="afterInteractive">{`
+        <Script id="google-translate-init" strategy="beforeInteractive">{`
           function googleTranslateElementInit() {
             new google.translate.TranslateElement(
-              { pageLanguage: 'en', autoDisplay: false },
+              { pageLanguage: 'en', autoDisplay: false, includedLanguages: 'hi,bn,te,mr,ta,ur,gu,kn,ml,pa,or,as,ne,kok,sd' },
               'google_translate_element'
             );
           }
         `}</Script>
+        <Script
+          src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+          strategy="beforeInteractive"
+        />
       </head>
       <body className={inter.variable + ' font-sans'}>
-        {/* Hidden Google Translate mount point */}
-        <div id="google_translate_element" style={{ display: 'none' }} />
+        <div id="google_translate_element" style={{ position: 'absolute', top: '-9999px', left: '-9999px' }} />
         <LanguageProvider>
           <AuthProvider>
             <Toaster

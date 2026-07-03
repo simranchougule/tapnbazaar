@@ -16,42 +16,28 @@ export function useLanguage() {
   return useContext(LanguageContext)
 }
 
-// Trigger Google Translate to switch to the given language code
-function triggerGoogleTranslate(langCode: string) {
-  if (langCode === 'en') {
-    // Restore original — reload without translate cookie
-    const frame = document.querySelector<HTMLIFrameElement>('.goog-te-banner-frame')
-    if (frame) {
-      const restore = frame.contentDocument?.querySelector<HTMLAnchorElement>('.goog-te-button button')
-      restore?.click()
-    }
-    // Remove Google Translate cookies and reload
-    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname
-    window.location.reload()
-    return
+function setCookie(name: string, value: string) {
+  const hostname = window.location.hostname
+  // Set for both root domain and current hostname
+  document.cookie = `${name}=${value}; path=/; max-age=31536000`
+  if (hostname !== 'localhost') {
+    document.cookie = `${name}=${value}; path=/; domain=.${hostname}; max-age=31536000`
   }
+}
 
-  // Set the googtrans cookie that Google Translate reads
-  const cookieValue = `/en/${langCode}`
-  document.cookie = `googtrans=${cookieValue}; path=/`
-  document.cookie = `googtrans=${cookieValue}; path=/; domain=${window.location.hostname}`
-
-  // Try using the Select element Google Translate injects
-  const select = document.querySelector<HTMLSelectElement>('.goog-te-combo')
-  if (select) {
-    select.value = langCode
-    select.dispatchEvent(new Event('change'))
-    return
+function deleteCookie(name: string) {
+  const hostname = window.location.hostname
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC`
+  if (hostname !== 'localhost') {
+    document.cookie = `${name}=; path=/; domain=.${hostname}; expires=Thu, 01 Jan 1970 00:00:00 UTC`
   }
-
-  // Fallback: reload — Google Translate will pick up the cookie
-  window.location.reload()
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState('en')
 
+  // On mount: read saved language and apply googtrans cookie so Google Translate
+  // auto-translates on page load if a non-English language was previously selected
   useEffect(() => {
     const saved = localStorage.getItem('preferred_language') || 'en'
     setLanguageState(saved)
@@ -62,7 +48,15 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setLanguageState(lang)
     localStorage.setItem('preferred_language', lang)
     document.documentElement.lang = lang
-    triggerGoogleTranslate(lang)
+
+    if (lang === 'en') {
+      deleteCookie('googtrans')
+    } else {
+      setCookie('googtrans', `/en/${lang}`)
+    }
+
+    // Reload so Google Translate picks up the new cookie on the fresh page load
+    window.location.reload()
   }
 
   return (
