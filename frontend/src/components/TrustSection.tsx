@@ -1,47 +1,14 @@
 'use client'
 
-import { motion, Variants } from 'framer-motion'
 import { ShieldCheck, BadgeCheck, CreditCard, Headset, Wallet } from 'lucide-react'
 
 const CARDS = [
-  {
-    icon: ShieldCheck,
-    title: 'Verified Sellers',
-    desc: 'Trusted and verified sellers across India.',
-  },
-  {
-    icon: BadgeCheck,
-    title: 'Manually Reviewed Listings',
-    desc: 'Listings are reviewed to maintain quality and authenticity.',
-  },
-  {
-    icon: CreditCard,
-    title: 'Secure Payments & EMI',
-    desc: 'Safe payments through UPI, Cards, Net Banking, Wallets and EMI.',
-  },
-  {
-    icon: Headset,
-    title: '24×7 Customer Support',
-    desc: 'Dedicated support team available whenever you need assistance.',
-  },
-  {
-    icon: Wallet,
-    title: 'Cash on Delivery',
-    desc: 'Flexible payment options including COD on eligible products.',
-  },
+  { icon: ShieldCheck, title: 'Verified Sellers',            desc: 'Trusted and verified sellers across India.' },
+  { icon: BadgeCheck,  title: 'Manually Reviewed Listings',  desc: 'Listings are reviewed to maintain quality and authenticity.' },
+  { icon: CreditCard,  title: 'Secure Payments & EMI',       desc: 'Safe payments through UPI, Cards, Net Banking, Wallets and EMI.' },
+  { icon: Headset,     title: '24×7 Customer Support',       desc: 'Dedicated support team available whenever you need assistance.' },
+  { icon: Wallet,      title: 'Cash on Delivery',            desc: 'Flexible payment options including COD on eligible products.' },
 ]
-
-const container: Variants = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.08 },
-  },
-}
-
-const cardVariant: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
-}
 
 export default function TrustSection() {
   return (
@@ -50,13 +17,7 @@ export default function TrustSection() {
       className="bg-white border-t border-slate-200 py-10 sm:py-16 px-4 pb-14 sm:pb-16"
     >
       <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-6 sm:mb-12"
-        >
+        <div className="text-center mb-6 sm:mb-12">
           <h2
             id="trust-heading"
             className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-3 flex items-center justify-center gap-2 flex-wrap"
@@ -77,46 +38,37 @@ export default function TrustSection() {
           <p className="text-slate-500 text-sm sm:text-base max-w-xl mx-auto">
             Buy and sell with confidence across India&apos;s trusted open marketplace.
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-40px' }}
-          className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-5"
-        >
-         {CARDS.map((card, index) => {
-  const Icon = card.icon
-  // Last card (index 4) spans 2 cols on mobile to center it, 1 col on desktop
-  const isLast = index === CARDS.length - 1
-  return (
-    <motion.article
-      key={card.title}
-      variants={cardVariant}
-      tabIndex={0}
-      aria-label={card.title}
-      className={`group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 p-6 flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 dark:bg-slate-800 dark:border-slate-700 ${isLast ? 'col-span-2 lg:col-span-1' : ''}`}
-    >
-  
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-5">
+          {CARDS.map((card, index) => {
+            const Icon = card.icon
+            const isLast = index === CARDS.length - 1
+            return (
+              <article
+                key={card.title}
+                tabIndex={0}
+                aria-label={card.title}
+                className={`group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 p-6 flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 ${isLast ? 'col-span-2 lg:col-span-1' : ''}`}
+              >
                 <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center mb-2 sm:mb-4 bg-green-50 group-hover:bg-green-100 transition-colors">
                   <Icon className="w-5 h-5 sm:w-7 sm:h-7 text-green-500" strokeWidth={1.8} />
                 </div>
 
                 <h3
-                  className="text-xs sm:text-base font-bold mb-1 sm:mb-2 dark:text-white"
+                  className="text-xs sm:text-base font-bold mb-1 sm:mb-2"
                   style={{ color: '#001B5E' }}
                 >
                   {card.title}
                 </h3>
 
-                <p className="hidden sm:block text-sm text-slate-500 leading-relaxed dark:text-slate-400">
+                <p className="hidden sm:block text-sm text-slate-500 leading-relaxed">
                   {card.desc}
                 </p>
-              </motion.article>
+              </article>
             )
           })}
-        </motion.div>
+        </div>
       </div>
     </section>
   )
