@@ -97,15 +97,21 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
 export const getProducts = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const page      = parseInt(req.query.page as string) || 1
-    const limit     = parseInt(req.query.limit as string) || 20
+    const limit     = Math.min(parseInt(req.query.limit as string) || 20, 100)
     const search    = req.query.search as string | undefined
     const category  = req.query.category as string | undefined
     const minPrice  = req.query.minPrice as string | undefined
     const maxPrice  = req.query.maxPrice as string | undefined
     const city      = req.query.city as string | undefined
+    const locality  = req.query.locality as string | undefined
     const condition = req.query.condition as string | undefined
-    const sortBy    = (req.query.sortBy as string) || 'createdAt'
-    const order     = (req.query.order as string) || 'desc'
+
+    const ALLOWED_SORT   = ['createdAt', 'price', 'views'] as const
+    const ALLOWED_ORDER  = ['asc', 'desc'] as const
+    const sortByRaw = req.query.sortBy as string
+    const orderRaw  = req.query.order  as string
+    const sortBy = ALLOWED_SORT.includes(sortByRaw as any)  ? sortByRaw : 'createdAt'
+    const order  = ALLOWED_ORDER.includes(orderRaw as any)  ? orderRaw  : 'desc'
 
     const where: any = { status: 'ACTIVE' }
 
@@ -135,6 +141,7 @@ export const getProducts = async (req: AuthRequest, res: Response): Promise<void
     }
 
     if (city)      where.city      = { contains: city, mode: 'insensitive' }
+    if (locality)  where.locality  = { contains: locality, mode: 'insensitive' }
     if (condition) where.condition = condition
 
     if (minPrice || maxPrice) {
@@ -185,6 +192,13 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
       return
     }
 
+    // Strip supplier-private fields unless the caller is the product owner
+    const callerId = req.user?.userId
+    const isOwner  = callerId === product.userId
+    const safeProduct = isOwner
+      ? product
+      : { ...product, supplierInfo: undefined, supplierCost: undefined }
+
     const related = await prisma.product.findMany({
       where: { categoryId: product.categoryId, id: { not: id }, status: 'ACTIVE' },
       include: { user: { select: { id: true, name: true, city: true } } },
@@ -192,7 +206,7 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
       take: 6,
     })
 
-    res.status(200).json({ success: true, product, related })
+    res.status(200).json({ success: true, product: safeProduct, related })
   } catch (error) {
     console.error('Get product error:', error)
     res.status(500).json({ success: false, message: 'Something went wrong.' })

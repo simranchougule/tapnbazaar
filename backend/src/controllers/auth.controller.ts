@@ -116,7 +116,9 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       where: { id: req.user?.userId },
       select: {
         id: true, name: true, email: true, phone: true, avatar: true,
-        bio: true, city: true, state: true, isVerified: true, createdAt: true,
+        bio: true, city: true, state: true, createdAt: true,
+        isVerified: true, isAdmin: true, isBanned: true, isTrusted: true,
+        phoneVerified: true, emailVerified: true,
         _count: { select: { products: true } },
       },
     })
@@ -151,6 +153,34 @@ export const getPublicProfile = async (req: Request, res: Response): Promise<voi
     res.status(200).json({ success: true, user })
   } catch (error) {
     res.status(500).json({ success: false, message: 'Something went wrong.' })
+  }
+}
+
+export const updateAvatar = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.file) { res.status(400).json({ success: false, message: 'No image provided' }); return }
+    const { v2: cloudinary } = await import('cloudinary')
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key:    process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    })
+    const fileStr = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
+    const result  = await cloudinary.uploader.upload(fileStr, {
+      folder: 'tapnbazaar/avatars',
+      transformation: [{ width: 300, height: 300, crop: 'fill', gravity: 'face' }, { quality: 'auto' }],
+    })
+    const user = await prisma.user.update({
+      where: { id: req.user!.userId },
+      data:  { avatar: result.secure_url },
+    })
+    res.status(200).json({
+      success: true,
+      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, avatar: user.avatar, city: user.city, state: user.state, isVerified: user.isVerified },
+    })
+  } catch (error) {
+    console.error('Avatar upload error:', error)
+    res.status(500).json({ success: false, message: 'Avatar upload failed.' })
   }
 }
 
@@ -210,20 +240,40 @@ export const sendPhoneOtp = async (req: AuthRequest, res: Response): Promise<voi
 
     const otp    = Math.floor(100000 + Math.random() * 900000).toString()
     const expiry = new Date(Date.now() + 10 * 60 * 1000)
+    // DEV MODE: log OTP to terminal so you can test without SMS
+    if (process.env.NODE_ENV === 'development') {
+      console.log('\n==================================')
+      console.log('📱 DEV MODE OTP:', otp, '| Phone:', phone)
+      console.log('==================================\n')
+    }
 
 await prisma.user.update({
       where: { id: req.user!.userId },
       data:  { phone, phoneOtp: otp, phoneOtpExpiry: expiry, phoneOtpAttempts: 0 },
     })
 
-    // Try SMS first, fall back to email
+    // Send OTP via SMS
     const smsSent = await sendSmsOtp(phone.replace(/\s/g, ''), otp)
     if (!smsSent) {
-      const user = await prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true } })
-      if (user) await sendOtpEmail(user.email, otp).catch(() => {})
+      if (process.env.NODE_ENV === 'development') {
+        // In dev mode — SMS not configured, but OTP is printed in terminal above
+        console.log('[DEV] SMS not sent — use the OTP printed in terminal above')
+        res.status(200).json({ success: true, message: 'DEV MODE: Check backend terminal for OTP' })
+        return
+      }
+      // In production — clear OTP and return error
+      await prisma.user.update({
+        where: { id: req.user!.userId },
+        data:  { phoneOtp: null, phoneOtpExpiry: null },
+      })
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP. Please try again.',
+      })
+      return
     }
 
-    res.status(200).json({ success: true, message: smsSent ? 'OTP sent to your phone' : 'OTP sent to your registered email' })
+    res.status(200).json({ success: true, message: 'OTP sent to your mobile number' })
   } catch {
     res.status(500).json({ success: false, message: 'Something went wrong.' })
   }

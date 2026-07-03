@@ -6,6 +6,14 @@ if (envResult.error) {
   console.error('⚠️  .env loaded but DATABASE_URL is missing — check the file for typos')
 }
 
+// Fail fast if critical secrets are missing
+const REQUIRED_ENV = ['DATABASE_URL', 'JWT_SECRET', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']
+const missingEnv = REQUIRED_ENV.filter(k => !process.env[k])
+if (missingEnv.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnv.join(', '))
+  process.exit(1)
+}
+
 import express from 'express'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
@@ -70,6 +78,14 @@ app.get('/api/health', (req, res) => {
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` })
+})
+
+// Global error handler — catches any error passed via next(err) or thrown in async routes
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Unhandled error:', err)
+  const status  = err.status || err.statusCode || 500
+  const message = err.message || 'Something went wrong.'
+  res.status(status).json({ success: false, message })
 })
 
 // ─── SOCKET.IO ───────────────────────────────────────────────────────────────

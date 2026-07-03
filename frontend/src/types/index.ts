@@ -44,6 +44,11 @@ export interface Product {
   status:       'ACTIVE' | 'SOLD' | 'INACTIVE'
   city:         string
   state:        string
+  locality?:    string
+  area?:        string
+  pincode?:     string
+  latitude?:    number
+  longitude?:   number
   images:       string[]
   views:        number
   createdAt:    string

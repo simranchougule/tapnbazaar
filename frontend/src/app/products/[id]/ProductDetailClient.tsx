@@ -278,20 +278,20 @@ export default function ProductDetailClient({
             {/* Area, Pincode and View on Map */}
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
-                {(product as any).area && (
+                {product.area && (
                   <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-                    📍 {(product as any).area}
+                    📍 {product.area}
                   </span>
                 )}
-                {(product as any).pincode && (
+                {product.pincode && (
                   <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-                    {(product as any).pincode}
+                    {product.pincode}
                   </span>
                 )}
               </div>
-              {(product as any).latitude && (product as any).longitude && (
+              {product.latitude && product.longitude && (
                 <a
-                  href={`https://www.google.com/maps?q=${(product as any).latitude},${(product as any).longitude}`}
+                  href={`https://www.google.com/maps?q=${product.latitude},${product.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-600 font-medium border border-orange-200 px-3 py-1.5 rounded-xl hover:bg-orange-50 transition-colors"
@@ -304,14 +304,13 @@ export default function ProductDetailClient({
 
             <p className="text-gray-600 text-sm leading-relaxed">{product.description}</p>
 
-            {/* Dropship shipping info */}
-            {(product as any).listingType === 'dropship' && (
+            {product.listingType === 'dropship' && (
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="text-base">🚚</span>
                   <p className="text-sm font-semibold text-blue-700">Dropship Item</p>
                   <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-medium">
-                    Ships in {(product as any).deliveryDays || '5-10 days'}
+                    Ships in {product.deliveryDays || '5-10 days'}
                   </span>
                 </div>
                 <div className="h-px bg-blue-100" />
@@ -327,14 +326,14 @@ export default function ProductDetailClient({
                     <span className="text-sm mt-0.5">⏱️</span>
                     <div>
                       <p className="text-xs font-semibold text-gray-700">Delivery Time</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{(product as any).deliveryDays || '5–10 business days'}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{product.deliveryDays || '5–10 business days'}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-sm mt-0.5">🔄</span>
                     <div>
                       <p className="text-xs font-semibold text-gray-700">Returns</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{(product as any).returnPolicy || 'Contact seller within 7 days'}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{product.returnPolicy || 'Contact seller within 7 days'}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
@@ -345,9 +344,9 @@ export default function ProductDetailClient({
                     </div>
                   </div>
                 </div>
-                {(product as any).shippingNote && (
+                {product.shippingNote && (
                   <div className="bg-blue-100 rounded-xl px-3 py-2">
-                    <p className="text-xs text-blue-700">📝 {(product as any).shippingNote}</p>
+                    <p className="text-xs text-blue-700">📝 {product.shippingNote}</p>
                   </div>
                 )}
               </div>
@@ -435,7 +434,7 @@ export default function ProductDetailClient({
 
       {/* Make Offer Modal */}
       {showOffer && product && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowOffer(false)}>
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end sm:items-center justify-center p-4 pb-20 sm:pb-4" onClick={() => setShowOffer(false)}>
           <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div>

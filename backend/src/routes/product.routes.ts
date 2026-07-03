@@ -11,6 +11,7 @@ import {
   getNearbyProducts,
 } from '../controllers/product.controller'
 import { protect } from '../middleware/auth.middleware'
+import { optionalProtect } from '../middleware/auth.middleware'
 
 const router = Router()
 
@@ -21,7 +22,7 @@ router.get('/user/my-listings', protect, getMyProducts)
 router.get('/',          getProducts)
 router.get('/trending',  getTrendingProducts)
 router.get('/nearby',    getNearbyProducts)
-router.get('/:id',       getProduct)
+router.get('/:id',       optionalProtect, getProduct)  // optionalProtect so owner sees supplier fields
 router.post('/:id/view', incrementProductView)
 
 // Protected routes

@@ -52,3 +52,25 @@ export const protect = async (
     })
   }
 }
+
+// Like protect but does NOT reject unauthenticated requests.
+// Populates req.user if a valid token is present, otherwise continues as guest.
+export const optionalProtect = async (
+  req: AuthRequest,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization
+    if (authHeader?.startsWith('Bearer ')) {
+      const token   = authHeader.split(' ')[1]
+      const decoded = verifyToken(token)
+      const user    = await prisma.user.findUnique({
+        where:  { id: decoded.userId },
+        select: { isBanned: true },
+      })
+      if (user && !user.isBanned) req.user = decoded
+    }
+  } catch { /* invalid token — treat as guest */ }
+  next()
+}

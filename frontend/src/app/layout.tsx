@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import ConditionalFooter from '@/components/layout/ConditionalFooter'
 import BottomNav from '@/components/layout/BottomNav'
+import AuthProvider from '@/components/AuthProvider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,20 +31,22 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.variable + ' font-sans'}>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: { background: '#363636', color: '#fff' },
-          }}
-        />
-        <div className="min-h-screen flex flex-col">
-          <main className="flex-1 pb-16 sm:pb-0">
-            {children}
-          </main>
-          <ConditionalFooter />
-          <BottomNav />
-        </div>
+        <AuthProvider>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 3000,
+              style: { background: '#363636', color: '#fff' },
+            }}
+          />
+          <div className="min-h-screen flex flex-col">
+            <main className="flex-1 pb-16 sm:pb-0">
+              {children}
+            </main>
+            <ConditionalFooter />
+            <BottomNav />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   )

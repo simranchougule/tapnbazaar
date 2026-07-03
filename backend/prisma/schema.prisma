@@ -110,6 +110,7 @@ model Product {
   @@index([categoryId])
   @@index([status])
   @@index([createdAt])
+  @@index([status, createdAt])
   @@index([city])
   @@index([locality])
   @@index([pincode])
@@ -159,6 +160,7 @@ model Chat {
   participants ChatParticipant[]
   messages     Message[]
 
+  @@index([productId])
   @@map("chats")
 }
 
@@ -191,6 +193,7 @@ model Message {
   @@index([chatId])
   @@index([senderId])
   @@index([receiverId])
+  @@index([receiverId, isRead])
   @@index([createdAt])
   @@map("messages")
 }
@@ -201,8 +204,8 @@ model Report {
   userId    String
   reason    String
   details   String?
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
+  status    ReportStatus @default(PENDING)
+  createdAt DateTime     @default(now())
 
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   user      User     @relation("ReporterReports", fields: [userId], references: [id], onDelete: Cascade)
@@ -219,8 +222,8 @@ model UserReport {
   reporterId     String
   reason         String
   details        String?
-  status         String   @default("PENDING")
-  createdAt      DateTime @default(now())
+  status         ReportStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
 
   reportedUser   User     @relation("ReportedUser",  fields: [reportedUserId], references: [id], onDelete: Cascade)
   reporter       User     @relation("UserReporter",  fields: [reporterId],     references: [id], onDelete: Cascade)
@@ -266,4 +269,10 @@ enum ProductStatus {
 enum ListingType {
   local
   dropship
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
 }

@@ -85,7 +85,7 @@ export default function Navbar() {
             <div className="flex items-center gap-1 ml-auto">
               {isLoggedIn ? (
                 <>
-                  {(user as any)?.isAdmin && (
+                  {user?.isAdmin && (
                     <Link href="/admin" className="hidden sm:flex items-center gap-1.5 text-orange-500 hover:bg-orange-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
                       <ShieldCheck className="w-4 h-4" />
                       Admin
@@ -135,8 +135,11 @@ export default function Navbar() {
 
                   {/* Profile */}
                   <Link href="/profile" className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded-xl transition-colors">
-                    <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                      {user?.name?.charAt(0).toUpperCase()}
+                    <div className="w-8 h-8 rounded-lg overflow-hidden shadow-sm flex-shrink-0">
+                      {user?.avatar
+                        ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                        : <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-sm">{user?.name?.charAt(0).toUpperCase()}</div>
+                      }
                     </div>
                     <span className="hidden lg:block text-sm font-medium text-gray-700">
                       {user?.name?.split(' ')[0]}

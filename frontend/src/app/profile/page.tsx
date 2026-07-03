@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/authStore'
 import { Product } from '@/types'
 import {
   MapPin, Package, LogOut, Edit, Check, X, ShoppingBag, TrendingUp,
-  ChevronRight, Heart, MessageCircle, Bell, ShieldCheck
+  ChevronRight, Heart, MessageCircle, Bell, ShieldCheck, Camera
 } from 'lucide-react'
 import Link from 'next/link'
 import { INDIA_STATES } from '@/lib/constants'
@@ -62,6 +62,7 @@ export default function ProfilePage() {
   const [editForm, setEditForm]   = useState({ name: '', phone: '', city: '', state: '', bio: '' })
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   const [showVerifyModal, setShowVerifyModal] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
 
   useEffect(() => { loadFromStorage() }, [])
 
@@ -89,6 +90,21 @@ export default function ProfilePage() {
       const res = await api.get('/favorites')
       setFavCount(res.data.products.length)
     } catch { /* ignore */ }
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      setAvatarUploading(true)
+      const formData = new FormData()
+      formData.append('image', file)
+      const res = await api.put('/auth/avatar', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const token = localStorage.getItem('token') || ''
+      setAuth(res.data.user, token)
+      toast.success('Profile photo updated!')
+    } catch { toast.error('Failed to upload photo') }
+    finally { setAvatarUploading(false) }
   }
 
   const handleSaveProfile = async () => {
@@ -156,8 +172,20 @@ export default function ProfilePage() {
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               {!editing ? (
                 <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center text-2xl font-bold text-orange-500">
-                    {user.name?.charAt(0).toUpperCase()}
+                <div className="relative group">
+                    <div className="w-16 h-16 bg-orange-100 rounded-full overflow-hidden flex items-center justify-center text-2xl font-bold text-orange-500">
+                      {user.avatar
+                        ? <Image src={user.avatar} alt={user.name} width={64} height={64} className="object-cover w-full h-full" />
+                        : user.name?.charAt(0).toUpperCase()
+                      }
+                    </div>
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                      {avatarUploading
+                        ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        : <Camera className="w-5 h-5 text-white" />
+                      }
+                      <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
+                    </label>
                   </div>
                   <div>
                     <h1 className="text-base font-bold text-gray-800">{user.name}</h1>

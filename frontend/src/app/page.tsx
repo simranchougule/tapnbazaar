@@ -154,7 +154,11 @@ function HomeContent() {
       }));
     }
     setPage(1);
-    fetchProducts(category, q, 1, sortBy, minPrice, maxPrice, city, locality);
+    fetchProducts(category, q, 1, sortBy, minPrice, maxPrice, city, locality).then(() => {
+      if (q || category) {
+        document.getElementById("listings-section")?.scrollIntoView({ behavior: "smooth" });
+      }
+    });
   }, [searchParams]);
 
   useEffect(() => {
