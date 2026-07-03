@@ -1,3 +1,14 @@
+/* Hide Google Translate injected banner */
+.goog-te-banner-frame,
+.goog-te-balloon-frame,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+body {
+  top: 0 !important;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

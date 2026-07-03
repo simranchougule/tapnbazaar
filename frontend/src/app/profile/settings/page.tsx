@@ -8,6 +8,8 @@ import { useAuthStore } from '@/store/authStore'
 import { ChevronRight, ArrowLeft, User, Lock, Bell, ShieldCheck, Globe, MapPin, Navigation, Moon } from 'lucide-react'
 import Link from 'next/link'
 
+import { useLanguage } from '@/lib/languageContext'
+
 const INDIAN_LANGUAGES = [
   { value: 'en',  label: '🇬🇧 English' },
   { value: 'hi',  label: '🇮🇳 Hindi — हिन्दी' },
@@ -52,19 +54,14 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [notifPrefs, setNotifPrefs] = useState({ messages: true, deals: true, system: true })
   const [privacyPrefs, setPrivacyPrefs] = useState({ showPhone: true, showLocation: true })
-  const [language, setLanguage] = useState('en')
+  const { language, setLanguage } = useLanguage()
 
   useEffect(() => {
     const saved = localStorage.getItem('preferred_language')
-    if (saved) {
-      setLanguage(saved)
-      document.documentElement.lang = saved
-    }
+    if (saved) document.documentElement.lang = saved
   }, [])
 
   const handleSaveLanguage = () => {
-    localStorage.setItem('preferred_language', language)
-    document.documentElement.lang = language
     const label = INDIAN_LANGUAGES.find(l => l.value === language)?.label || language
     toast.success(`Language set to ${label}`)
   }

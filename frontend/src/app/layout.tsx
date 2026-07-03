@@ -5,6 +5,8 @@ import { Toaster } from 'react-hot-toast'
 import ConditionalFooter from '@/components/layout/ConditionalFooter'
 import BottomNav from '@/components/layout/BottomNav'
 import AuthProvider from '@/components/AuthProvider'
+import { LanguageProvider } from '@/lib/languageContext'
+import Script from 'next/script'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -39,23 +41,42 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Google Translate — hidden widget, used programmatically */}
+        <Script
+          src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+          strategy="afterInteractive"
+        />
+        <Script id="google-translate-init" strategy="afterInteractive">{`
+          function googleTranslateElementInit() {
+            new google.translate.TranslateElement(
+              { pageLanguage: 'en', autoDisplay: false },
+              'google_translate_element'
+            );
+          }
+        `}</Script>
+      </head>
       <body className={inter.variable + ' font-sans'}>
-        <AuthProvider>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 3000,
-              style: { background: '#363636', color: '#fff' },
-            }}
-          />
-          <div className="min-h-screen flex flex-col">
-            <main className="flex-1 pb-16 sm:pb-0">
-              {children}
-            </main>
-            <ConditionalFooter />
-            <BottomNav />
-          </div>
-        </AuthProvider>
+        {/* Hidden Google Translate mount point */}
+        <div id="google_translate_element" style={{ display: 'none' }} />
+        <LanguageProvider>
+          <AuthProvider>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 3000,
+                style: { background: '#363636', color: '#fff' },
+              }}
+            />
+            <div className="min-h-screen flex flex-col">
+              <main className="flex-1 pb-16 sm:pb-0">
+                {children}
+              </main>
+              <ConditionalFooter />
+              <BottomNav />
+            </div>
+          </AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   )
