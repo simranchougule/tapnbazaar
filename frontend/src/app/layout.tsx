@@ -42,21 +42,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <Script id="google-translate-init" strategy="beforeInteractive">{`
+        <Script id="google-translate-init" strategy="afterInteractive">{`
           function googleTranslateElementInit() {
             new google.translate.TranslateElement(
-              { pageLanguage: 'en', autoDisplay: false, includedLanguages: 'hi,bn,te,mr,ta,ur,gu,kn,ml,pa,or,as,ne,kok,sd' },
+              { pageLanguage: 'en', autoDisplay: false },
               'google_translate_element'
             );
           }
         `}</Script>
         <Script
           src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
         />
       </head>
       <body className={inter.variable + ' font-sans'}>
-        <div id="google_translate_element" style={{ position: 'absolute', top: '-9999px', left: '-9999px' }} />
         <LanguageProvider>
           <AuthProvider>
             <Toaster

@@ -35,10 +35,10 @@ function deleteCookie(name: string) {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState('en')
+  const [mounted, setMounted] = useState(false)
 
-  // On mount: read saved language and apply googtrans cookie so Google Translate
-  // auto-translates on page load if a non-English language was previously selected
   useEffect(() => {
+    setMounted(true)
     const saved = localStorage.getItem('preferred_language') || 'en'
     setLanguageState(saved)
     document.documentElement.lang = saved
@@ -55,12 +55,15 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       setCookie('googtrans', `/en/${lang}`)
     }
 
-    // Reload so Google Translate picks up the new cookie on the fresh page load
     window.location.reload()
   }
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage }}>
+      {/* Google Translate mount point — client only, avoids hydration mismatch */}
+      {mounted && (
+        <div id="google_translate_element" style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: 0, height: 0, overflow: 'hidden' }} />
+      )}
       {children}
     </LanguageContext.Provider>
   )
