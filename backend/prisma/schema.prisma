@@ -116,6 +116,7 @@ model Product {
   @@index([pincode])
   @@index([latitude])
   @@index([longitude])
+  @@index([status, latitude, longitude])
   @@map("products")
 }
 

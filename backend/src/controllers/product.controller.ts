@@ -1,7 +1,7 @@
 import { Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
-import { sendNotification } from '../services/notificationService'
+import { sendNotification, sendBulkNotifications } from './notification.controller'
 
 export const createProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -11,20 +11,12 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
       res.status(400).json({ success: false, message: 'Please provide all required fields' })
       return
     }
-    if (typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 150) {
-      res.status(400).json({ success: false, message: 'Title must be between 3 and 150 characters' })
+    if (title.trim().length < 3) {
+      res.status(400).json({ success: false, message: 'Title must be at least 3 characters' })
       return
     }
-    if (typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 5000) {
-      res.status(400).json({ success: false, message: 'Description must be between 10 and 5000 characters' })
-      return
-    }
-    if (isNaN(parseFloat(price)) || parseFloat(price) <= 0 || parseFloat(price) > 10000000) {
-      res.status(400).json({ success: false, message: 'Price must be a positive number up to 1 crore' })
-      return
-    }
-    if (city && (typeof city !== 'string' || city.length > 100)) {
-      res.status(400).json({ success: false, message: 'Invalid city' })
+    if (parseFloat(price) <= 0) {
+      res.status(400).json({ success: false, message: 'Price must be greater than 0' })
       return
     }
     if (listingType === 'dropship' && !supplierCost) {
@@ -275,33 +267,34 @@ export const updateProduct = async (req: AuthRequest, res: Response): Promise<vo
       },
     })
 
+    // Respond immediately — notifications are best-effort side effects and
+    // shouldn't hold the HTTP response open, especially the price-drop
+    // fan-out which can touch many rows for a popular listing.
+    res.status(200).json({ success: true, message: 'Product updated!', product })
+
     if (status === 'SOLD' && existing.status !== 'SOLD') {
-      await sendNotification({
+      sendNotification({
         userId: existing.userId,
         type:   'product_sold',
         title:  '🎉 Your item was marked as sold!',
         body:   `"${existing.title}" has been marked as sold.`,
         link:   `/products/${id}`,
-      })
+      }).catch((err: unknown) => console.error('product_sold notification error:', err))
     }
 
     if (price && parseFloat(price) < existing.price) {
-      const favoriters = await prisma.favorite.findMany({
+      prisma.favorite.findMany({
         where:  { productId: id },
         select: { userId: true },
-      })
-      await Promise.all(favoriters.map((f: any) =>
-        sendNotification({
-          userId: f.userId,
-          type:   'price_drop',
-          title:  '📉 Price dropped on a saved item!',
-          body:   `"${existing.title}" dropped to Rs.${parseFloat(price).toLocaleString('en-IN')}`,
-          link:   `/products/${id}`,
+      }).then((favoriters: { userId: string }[]) =>
+        sendBulkNotifications(favoriters, {
+          type: 'price_drop',
+          title: '📉 Price dropped on a saved item!',
+          body: `"${existing.title}" dropped to Rs.${parseFloat(price).toLocaleString('en-IN')}`,
+          link: `/products/${id}`,
         })
-      ))
+      ).catch((err: unknown) => console.error('price_drop notification error:', err))
     }
-
-    res.status(200).json({ success: true, message: 'Product updated!', product })
   } catch (error) {
     console.error('Update product error:', error)
     res.status(500).json({ success: false, message: 'Something went wrong.' })
@@ -392,11 +385,21 @@ export const getNearbyProducts = async (req: AuthRequest, res: Response): Promis
       return
     }
 
+    // Bounding-box pre-filter: cheaply narrow the candidate set in the DB
+    // (using the latitude/longitude index) before running the precise
+    // Haversine calculation in Node on a much smaller row set. This is an
+    // approximation (a box, not a circle) — the exact-radius filter below
+    // still trims it down to a true circle. 1 degree latitude ≈ 111 km;
+    // longitude degrees shrink with cos(latitude), so we account for that
+    // to avoid an overly wide box near the equator vs. near the poles.
+    const latDelta = radiusKm / 111
+    const lngDelta = radiusKm / (111 * Math.max(Math.cos((lat * Math.PI) / 180), 0.01))
+
     const products = await prisma.product.findMany({
       where: {
         status:    'ACTIVE',
-        latitude:  { not: null },
-        longitude: { not: null },
+        latitude:  { not: null, gte: lat - latDelta, lte: lat + latDelta },
+        longitude: { not: null, gte: lng - lngDelta, lte: lng + lngDelta },
       },
       include: {
         user:     { select: { id: true, name: true, avatar: true, city: true } },
@@ -408,9 +411,9 @@ export const getNearbyProducts = async (req: AuthRequest, res: Response): Promis
     })
 
     const nearby = products
-      .map(p => ({ ...p, distance: haversineDistance(lat, lng, p.latitude!, p.longitude!) }))
-      .filter(p => p.distance <= radiusKm)
-      .sort((a, b) => a.distance - b.distance)
+      .map((p: typeof products[number]) => ({ ...p, distance: haversineDistance(lat, lng, p.latitude!, p.longitude!) }))
+      .filter((p: { distance: number }) => p.distance <= radiusKm)
+      .sort((a: { distance: number }, b: { distance: number }) => a.distance - b.distance)
       .slice(0, limit)
 
     res.json({ success: true, products: nearby, total: nearby.length })
