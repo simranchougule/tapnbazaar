@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma'
 import { Server } from 'socket.io'
+import { randomUUID } from 'crypto'
 
 let _io: Server | null = null
 
@@ -30,4 +31,38 @@ export const sendNotification = async (params: {
   }
 
   return notification
+}
+
+// Fan-out variant for sending the *same* notification content to many
+// users at once (e.g. price-drop alerts to everyone who favorited a
+// listing). A single batched insert instead of N individual awaited
+// `create` calls, so a listing with hundreds/thousands of favoriters
+// doesn't turn into hundreds/thousands of sequential round trips inside
+// one request. IDs are generated up front so the DB rows and the
+// real-time socket payloads reference the same notification id.
+export const sendBulkNotifications = async (
+  targets: { userId: string }[],
+  content: { type: NotificationType; title: string; body: string; link?: string }
+) => {
+  if (targets.length === 0) return
+
+  const createdAt = new Date()
+  const notifications = targets.map((t) => ({
+    id:        randomUUID(),
+    userId:    t.userId,
+    type:      content.type,
+    title:     content.title,
+    body:      content.body,
+    link:      content.link,
+    isRead:    false,
+    createdAt,
+  }))
+
+  await prisma.notification.createMany({ data: notifications })
+
+  if (_io) {
+    for (const n of notifications) {
+      _io.to(`user:${n.userId}`).emit('notification', n)
+    }
+  }
 }

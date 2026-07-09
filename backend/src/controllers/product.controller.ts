@@ -1,7 +1,7 @@
 import { Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
-import { sendNotification, sendBulkNotifications } from './notification.controller'
+import { sendNotification, sendBulkNotifications } from '../services/notificationService'
 
 export const createProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
