@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import api from '@/lib/api'
 import { Product } from '@/types'
 import { Flame, MapPin, Eye, X, Tag } from 'lucide-react'
@@ -99,10 +100,12 @@ export default function TrendingProducts({ onClose }: TrendingProductsProps) {
                 {/* Image */}
                 <div className="relative bg-gray-200 h-36 w-full">
                   {product.images.length > 0 ? (
-                    <img
+                    <Image
                       src={product.images[0]}
                       alt={product.title}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="192px"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

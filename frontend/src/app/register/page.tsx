@@ -92,7 +92,7 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
-            <Image src="/tapnbazaar-logo.png" alt="TapnBazaar" width={160} height={64} className="object-contain mx-auto" />
+            <Image src="/tapnbazaar-logo.png" alt="TapnBazaar" width={1637} height={723} className="h-16 w-40 object-contain mx-auto" />
           </Link>
           <p className="text-gray-500 mt-2">Create your free account</p>
         </div>
@@ -111,7 +111,7 @@ export default function RegisterPage() {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Your full name"
+                placeholder="Simran Chougule"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
               />
             </div>

@@ -219,7 +219,7 @@ export default function EditProductPage() {
                 <div className="grid grid-cols-5 gap-2 mb-3">
                   {images.map((url, index) => (
                     <div key={index} className="relative aspect-square">
-                      <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-gray-200" loading="lazy" />
+                      <Image src={url} alt="" fill className="object-cover rounded-xl border border-gray-200" sizes="20vw" />
                       <button type="button" onClick={() => removeImage(index)}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
                         <X className="w-3 h-3" />

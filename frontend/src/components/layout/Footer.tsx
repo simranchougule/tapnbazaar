@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Mail, MapPin, Clock, Instagram, Facebook, Twitter, ArrowRight } from 'lucide-react'
 
 const CATEGORIES = [
@@ -44,7 +45,7 @@ function BrandBlock() {
   return (
     <div>
       <Link href="/" className="inline-block mb-3">
-        <img src="/tapnbazaar-logo.png" alt="TapnBazaar" className="h-10 w-auto object-contain" />
+        <Image src="/tapnbazaar-logo.png" alt="TapnBazaar" width={1637} height={723} className="h-10 w-auto object-contain" />
       </Link>
       <p className="text-sm text-slate-600 leading-relaxed max-w-md">
         Buy New, Sell Used. All in One Place — Safe, simple and free across India.

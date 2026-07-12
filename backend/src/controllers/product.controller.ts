@@ -2,6 +2,7 @@ import { Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
 import { sendNotification, sendBulkNotifications } from '../services/notificationService'
+import { withCache } from '../lib/cache'
 
 export const createProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -341,20 +342,24 @@ export const getMyProducts = async (req: AuthRequest, res: Response): Promise<vo
 export const getTrendingProducts = async (req: any, res: Response): Promise<void> => {
   try {
     const limit = parseInt(req.query.limit as string) || 10
-    const products = await prisma.product.findMany({
-      where: { status: 'ACTIVE' },
-      include: {
-        user:     { select: { id: true, name: true, avatar: true, city: true } },
-        category: { select: { id: true, name: true, slug: true, icon: true } },
-        _count:   { select: { favorites: true } },
-      },
-      orderBy: [
-        { views: 'desc' },
-        { favorites: { _count: 'desc' } },
-        { createdAt: 'desc' },
-      ],
-      take: limit,
-    })
+    // Trending order changes slowly (views/favorites), so a short cache
+    // avoids hitting Postgres on every homepage/trending-widget load.
+    const products = await withCache(`trending:${limit}`, 60_000, () =>
+      prisma.product.findMany({
+        where: { status: 'ACTIVE' },
+        include: {
+          user:     { select: { id: true, name: true, avatar: true, city: true } },
+          category: { select: { id: true, name: true, slug: true, icon: true } },
+          _count:   { select: { favorites: true } },
+        },
+        orderBy: [
+          { views: 'desc' },
+          { favorites: { _count: 'desc' } },
+          { createdAt: 'desc' },
+        ],
+        take: limit,
+      })
+    )
     res.status(200).json({ success: true, products })
   } catch (error) {
     console.error('Get trending products error:', error)

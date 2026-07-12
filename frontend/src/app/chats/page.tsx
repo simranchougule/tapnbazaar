@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import Navbar from '@/components/layout/Navbar'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
@@ -74,9 +75,9 @@ export default function ChatsPage() {
                   className={"bg-white rounded-2xl p-4 flex items-center gap-3 hover:shadow-md transition-shadow " + (isUnread ? 'border-l-4 border-orange-500' : '')}
                 >
                   {/* Product thumbnail */}
-                  <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
+                  <div className="relative w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                     {chat.product.images.length > 0 ? (
-                      <img src={chat.product.images[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      <Image src={chat.product.images[0]} alt="" fill className="object-cover" sizes="48px" />
                     ) : (
                       <Tag className="w-5 h-5 text-gray-300" />
                     )}

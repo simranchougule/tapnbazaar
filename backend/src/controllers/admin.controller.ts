@@ -2,17 +2,24 @@ import { Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
 import { sendNotification } from '../services/notificationService'
+import { withCache } from '../lib/cache'
 
 export const getStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const [totalUsers, totalProducts, totalMessages, activeProducts, soldProducts] = await Promise.all([
-      prisma.user.count(),
-      prisma.product.count(),
-      prisma.message.count(),
-      prisma.product.count({ where: { status: 'ACTIVE' } }),
-      prisma.product.count({ where: { status: 'SOLD' } }),
-    ])
-    res.status(200).json({ success: true, stats: { totalUsers, totalProducts, totalMessages, activeProducts, soldProducts } })
+    // Dashboard counts don't need to be second-by-second accurate — a
+    // short cache avoids five COUNT queries every time an admin opens
+    // or refreshes the dashboard.
+    const stats = await withCache('admin:stats', 60_000, async () => {
+      const [totalUsers, totalProducts, totalMessages, activeProducts, soldProducts] = await Promise.all([
+        prisma.user.count(),
+        prisma.product.count(),
+        prisma.message.count(),
+        prisma.product.count({ where: { status: 'ACTIVE' } }),
+        prisma.product.count({ where: { status: 'SOLD' } }),
+      ])
+      return { totalUsers, totalProducts, totalMessages, activeProducts, soldProducts }
+    })
+    res.status(200).json({ success: true, stats })
   } catch { res.status(500).json({ success: false, message: 'Something went wrong.' }) }
 }
 

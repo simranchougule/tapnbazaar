@@ -95,9 +95,16 @@ export default function FavoritesPage() {
                   <Heart className="w-4 h-4 text-red-500 fill-red-500" />
                 </button>
                 <Link href={'/products/' + product.id}>
-                  <div className="bg-gray-100 h-44 w-full flex items-center justify-center">
+                  <div className="relative bg-gray-100 h-44 w-full flex items-center justify-center">
                     {product.images.length > 0 ? (
-                      <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" onError={(e: any) => { e.target.src = '/placeholder.png' }} />
+                      <Image
+                        src={product.images[0]}
+                        alt={product.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 50vw, 300px"
+                        onError={(e: any) => { e.target.src = '/placeholder.png' }}
+                      />
                     ) : (
                       <Tag className="w-10 h-10 text-gray-300" />
                     )}

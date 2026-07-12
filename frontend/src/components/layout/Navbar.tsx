@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
@@ -78,7 +79,7 @@ export default function Navbar() {
 
             {/* Logo */}
             <Link href="/" className="flex-shrink-0">
-              <img src="/tapnbazaar-logo.png" alt="TapnBazaar" className="h-16 w-40 object-contain" />
+              <Image src="/tapnbazaar-logo.png" alt="TapnBazaar" width={1637} height={723} className="h-16 w-40 object-contain" />
             </Link>
 
             {/* Right Actions */}
@@ -135,9 +136,9 @@ export default function Navbar() {
 
                   {/* Profile */}
                   <Link href="/profile" className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded-xl transition-colors">
-                    <div className="w-8 h-8 rounded-lg overflow-hidden shadow-sm flex-shrink-0">
+                    <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-sm flex-shrink-0">
                       {user?.avatar
-                        ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                        ? <Image src={user.avatar} alt={user.name} fill className="object-cover" sizes="32px" />
                         : <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-sm">{user?.name?.charAt(0).toUpperCase()}</div>
                       }
                     </div>
@@ -164,9 +165,6 @@ export default function Navbar() {
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMobileMenu(!mobileMenu)}
-                aria-label="Toggle navigation menu"
-                aria-expanded={mobileMenu}
-                aria-controls="mobile-menu"
                 className="md:hidden p-2.5 text-gray-500 hover:bg-slate-50 rounded-xl transition-colors ml-1"
               >
                 {mobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -178,7 +176,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenu && (
-        <div id="mobile-menu" className="bg-white border-b border-gray-100 md:hidden">
+        <div className="bg-white border-b border-gray-100 md:hidden">
           <div className="px-4 py-3 space-y-3">
             {isLoggedIn ? (
               <div className="grid grid-cols-4 gap-2">
