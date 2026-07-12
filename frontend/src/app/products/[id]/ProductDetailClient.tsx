@@ -364,9 +364,12 @@ export default function ProductDetailClient({
               <User className="w-4 h-4 text-gray-300" />
             </Link>
 
-            {/* Buyer CTAs */}
+           {/* Buyer CTAs */}
             {!isOwner && product.status !== 'SOLD' && (
               <div className="flex flex-col gap-2">
+                <p className="text-xs text-gray-400 text-center">
+                  Chat with the seller to arrange delivery — pay cash on delivery, no online payment required.
+                </p>
                 {/* Primary — Chat with Seller */}
                 <InlineChat
                   productId={product.id}

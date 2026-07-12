@@ -1,13 +1,13 @@
 'use client'
 
-import { ShieldCheck, BadgeCheck, CreditCard, Headset, Wallet } from 'lucide-react'
+import { ShieldCheck, BadgeCheck, MessageCircle, Headset, Wallet } from 'lucide-react'
 
 const CARDS = [
   { icon: ShieldCheck, title: 'Verified Sellers',            desc: 'Trusted and verified sellers across India.' },
   { icon: BadgeCheck,  title: 'Manually Reviewed Listings',  desc: 'Listings are reviewed to maintain quality and authenticity.' },
-  { icon: CreditCard,  title: 'Secure Payments & EMI',       desc: 'Safe payments through UPI, Cards, Net Banking, Wallets and EMI.' },
+  { icon: MessageCircle, title: 'Chat Directly With Sellers', desc: 'Talk to sellers, ask questions and arrange delivery yourself.' },
   { icon: Headset,     title: '24×7 Customer Support',       desc: 'Dedicated support team available whenever you need assistance.' },
-  { icon: Wallet,      title: 'Cash on Delivery',            desc: 'Flexible payment options including COD on eligible products.' },
+  { icon: Wallet,      title: 'Cash on Delivery',            desc: 'Inspect your item and pay cash on delivery — no online payment needed.' },
 ]
 
 export default function TrustSection() {
