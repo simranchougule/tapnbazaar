@@ -13,7 +13,7 @@ import { Product } from '@/types'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
 export const metadata: Metadata = {
-  title: 'TapnBazaar - Buy New, Sell Used. All in One Place',
+  title: { absolute: 'TapnBazaar - Buy New, Sell Used. All in One Place' },
   description:
     'Browse thousands of local listings across electronics, vehicles, property, fashion, furniture and more. Buy new or sell used, all in one place on TapnBazaar.',
   alternates: {

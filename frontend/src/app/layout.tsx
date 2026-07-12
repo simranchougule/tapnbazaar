@@ -5,8 +5,6 @@ import { Toaster } from 'react-hot-toast'
 import ConditionalFooter from '@/components/layout/ConditionalFooter'
 import BottomNav from '@/components/layout/BottomNav'
 import AuthProvider from '@/components/AuthProvider'
-import { LanguageProvider } from '@/lib/languageContext'
-import Script from 'next/script'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -14,17 +12,36 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tapnbazaar.com'
+const SITE_URL  = process.env.NEXT_PUBLIC_SITE_URL || 'https://tapnbazaar.com'
+const SITE_NAME = 'TapnBazaar'
+const TAGLINE    = 'Buy New, Sell Used. All in One Place'
 
+// SEO fix: previously only the product detail page set OG/Twitter tags,
+// so sharing any other page (home, categories, profile, etc.) on
+// WhatsApp/Facebook/Twitter showed no preview image/description at all —
+// social platforms fall back to these root-level defaults when a page
+// doesn't set its own. metadataBase also lets every page's relative
+// canonical/OG URLs resolve correctly instead of falling back to
+// localhost in some environments.
 export const metadata: Metadata = {
-  title: 'TapnBazaar - Buy New, Sell Used. All in One Place',
-  description: 'Buy New, Sell Used. All in One Place — Safe, simple and free across India.',
-  metadataBase: new URL(BASE_URL),
-  alternates: { canonical: '/' },
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default:  `${SITE_NAME} - ${TAGLINE}`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: `Browse thousands of local listings across electronics, vehicles, property, fashion, furniture and more. ${TAGLINE} on ${SITE_NAME}.`,
   openGraph: {
-    siteName: 'TapnBazaar',
     type: 'website',
-    locale: 'en_IN',
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} - ${TAGLINE}`,
+    description: TAGLINE,
+    images: [{ url: '/tapnbazaar-logo.png' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: `${SITE_NAME} - ${TAGLINE}`,
+    description: TAGLINE,
+    images: ['/tapnbazaar-logo.png'],
   },
 }
 
@@ -32,6 +49,29 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+}
+
+// Site-wide structured data: Organization identifies the business entity
+// to Google, and WebSite + the SearchAction is what enables the sitelinks
+// search box that can appear directly under your result in Google search.
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/tapnbazaar-logo.png`,
+}
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_NAME,
+  url: SITE_URL,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${SITE_URL}/?search={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
 }
 
 export default function RootLayout({
@@ -42,38 +82,32 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <Script id="google-translate-init" strategy="afterInteractive">{`
-          function googleTranslateElementInit() {
-            new google.translate.TranslateElement(
-              { pageLanguage: 'en', autoDisplay: false },
-              'google_translate_element'
-            );
-          }
-        `}</Script>
-        <Script
-          src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-          strategy="afterInteractive"
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
       <body className={inter.variable + ' font-sans'}>
-        <LanguageProvider>
-          <AuthProvider>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 3000,
-                style: { background: '#363636', color: '#fff' },
-              }}
-            />
-            <div className="min-h-screen flex flex-col">
-              <main className="flex-1 pb-16 sm:pb-0">
-                {children}
-              </main>
-              <ConditionalFooter />
-              <BottomNav />
-            </div>
-          </AuthProvider>
-        </LanguageProvider>
+        <AuthProvider>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 3000,
+              style: { background: '#363636', color: '#fff' },
+            }}
+          />
+          <div className="min-h-screen flex flex-col">
+            <main className="flex-1 pb-16 sm:pb-0">
+              {children}
+            </main>
+            <ConditionalFooter />
+            <BottomNav />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   )
