@@ -53,9 +53,26 @@ export const deleteProductAdmin = async (req: AuthRequest, res: Response): Promi
 
 export const banUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const targetId = req.params.id as string
+
+    if (targetId === req.user!.userId) {
+      res.status(403).json({ success: false, message: 'You cannot ban your own account.' })
+      return
+    }
+
+    const target = await prisma.user.findUnique({ where: { id: targetId }, select: { isAdmin: true } })
+    if (!target) {
+      res.status(404).json({ success: false, message: 'User not found.' })
+      return
+    }
+    if (target.isAdmin) {
+      res.status(403).json({ success: false, message: 'Admin accounts cannot be banned from this panel.' })
+      return
+    }
+
     const { banned } = req.body
     const user = await prisma.user.update({
-      where: { id: req.params.id as string },
+      where: { id: targetId },
       data: { isBanned: banned ?? true },
       select: { id: true, name: true, isBanned: true },
     })
@@ -65,9 +82,21 @@ export const banUser = async (req: AuthRequest, res: Response): Promise<void> =>
 
 export const markTrusted = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const targetId = req.params.id as string
+
+    const target = await prisma.user.findUnique({ where: { id: targetId }, select: { isAdmin: true } })
+    if (!target) {
+      res.status(404).json({ success: false, message: 'User not found.' })
+      return
+    }
+    if (target.isAdmin) {
+      res.status(403).json({ success: false, message: 'Admin accounts cannot have trusted status changed from this panel.' })
+      return
+    }
+
     const { trusted } = req.body
     const user = await prisma.user.update({
-      where: { id: req.params.id as string },
+      where: { id: targetId },
       data: { isTrusted: trusted ?? true },
       select: { id: true, name: true, isTrusted: true },
     })

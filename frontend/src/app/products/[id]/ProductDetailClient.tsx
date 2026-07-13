@@ -15,6 +15,16 @@ import InlineChat from '@/components/InlineChat'
 import ImageLightbox from '@/components/ImageLightbox'
 import ReportModal from '@/components/ReportModal'
 
+// A corrupted or manually-edited localStorage value should never crash the page.
+function safeParseUser(raw: string | null): { id: string } | null {
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
 const CONDITION_LABELS: Record<string, string> = {
   NEW:      'Brand New',
   LIKE_NEW: 'Like New',
@@ -193,7 +203,7 @@ export default function ProductDetailClient({
 
   if (!product) return null
 
-  const storedUser = user ?? (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null)
+  const storedUser = user ?? (typeof window !== 'undefined' ? safeParseUser(localStorage.getItem('user')) : null)
   const isOwner    = !!storedUser && storedUser.id === product.user.id
 
   return (

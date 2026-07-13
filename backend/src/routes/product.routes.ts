@@ -23,7 +23,7 @@ router.get('/',          getProducts)
 router.get('/trending',  getTrendingProducts)
 router.get('/nearby',    getNearbyProducts)
 router.get('/:id',       optionalProtect, getProduct)  // optionalProtect so owner sees supplier fields
-router.post('/:id/view', incrementProductView)
+router.post('/:id/view', optionalProtect, incrementProductView)
 
 // Protected routes
 router.post('/',    protect, createProduct)

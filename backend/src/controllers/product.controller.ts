@@ -2,7 +2,7 @@ import { Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { AuthRequest } from '../middleware/auth.middleware'
 import { sendNotification, sendBulkNotifications } from '../services/notificationService'
-import { withCache } from '../lib/cache'
+import { withCache, getCached, setCached } from '../lib/cache'
 
 export const createProduct = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -217,7 +217,23 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
 export const incrementProductView = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string
+
+    // De-dupe: a refresh or repeated bot hit within the window shouldn't
+    // keep incrementing views (and therefore trending rank). Prefer the
+    // logged-in user id when available (more reliable than IP, which can
+    // be shared behind NAT/office networks or rotate on mobile networks);
+    // fall back to IP for anonymous viewers.
+    const viewerId = req.user?.userId || req.ip || 'unknown'
+    const dedupeKey = `view-dedupe:${id}:${viewerId}`
+    const VIEW_DEDUPE_WINDOW_MS = 30 * 60 * 1000 // 30 minutes
+
+    if (getCached<true>(dedupeKey)) {
+      res.status(200).json({ success: true, deduped: true })
+      return
+    }
+
     await prisma.product.update({ where: { id }, data: { views: { increment: 1 } } })
+    setCached(dedupeKey, true, VIEW_DEDUPE_WINDOW_MS)
     res.status(200).json({ success: true })
   } catch {
     // Non-critical — fail silently so a view-count hiccup never breaks the page
