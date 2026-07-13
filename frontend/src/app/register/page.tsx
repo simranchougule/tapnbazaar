@@ -103,12 +103,13 @@ export default function RegisterPage() {
 
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 Full Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                name="name"
+                id="name"
+                  name="name"
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Simran Chougule"
@@ -118,12 +119,13 @@ export default function RegisterPage() {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email address <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
-                name="email"
+                id="email"
+                  name="email"
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="you@example.com"
@@ -133,12 +135,13 @@ export default function RegisterPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -190,12 +193,13 @@ export default function RegisterPage() {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 Confirm Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
@@ -237,7 +241,7 @@ export default function RegisterPage() {
 
             {/* Phone — now required */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                 Mobile Number <span className="text-red-500">*</span>
               </label>
               <div className="flex">
@@ -246,6 +250,7 @@ export default function RegisterPage() {
                 </span>
                 <input
                   type="tel"
+                  id="phone"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
@@ -260,9 +265,10 @@ export default function RegisterPage() {
             {/* City and State */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">City</label>
                 <input
                   type="text"
+                  id="city"
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
@@ -271,8 +277,9 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">State</label>
                 <select
+                  id="state"
                   name="state"
                   value={formData.state}
                   onChange={handleChange}

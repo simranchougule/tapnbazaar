@@ -67,10 +67,11 @@ export default function LoginPage() {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email address
               </label>
               <input
+                id="email"
                 type="email"
                 name="email"
                 value={formData.email}
@@ -83,7 +84,7 @@ export default function LoginPage() {
             {/* Password */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
                 <Link href="/forgot-password" className="text-xs text-orange-500 font-medium hover:underline">
@@ -92,6 +93,7 @@ export default function LoginPage() {
               </div>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}

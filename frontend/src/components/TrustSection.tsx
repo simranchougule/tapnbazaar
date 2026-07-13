@@ -47,9 +47,8 @@ export default function TrustSection() {
             return (
               <article
                 key={card.title}
-                tabIndex={0}
                 aria-label={card.title}
-                className={`group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 p-6 flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 ${isLast ? 'col-span-2 lg:col-span-1' : ''}`}
+                className={`group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 p-6 flex flex-col items-center text-center ${isLast ? 'col-span-2 lg:col-span-1' : ''}`}
               >
                 <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center mb-2 sm:mb-4 bg-green-50 group-hover:bg-green-100 transition-colors">
                   <Icon className="w-5 h-5 sm:w-7 sm:h-7 text-green-500" strokeWidth={1.8} />

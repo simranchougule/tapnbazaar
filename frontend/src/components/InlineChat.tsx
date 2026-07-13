@@ -32,6 +32,12 @@ export default function InlineChat({ productId, sellerName, productTitle, curren
   const [loading, setLoading]   = useState(false)
   const [sending, setSending]   = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef  = useRef<HTMLInputElement>(null)
+
+  // Focus the input whenever the user explicitly opens the chat panel
+  useEffect(() => {
+    if (open) inputRef.current?.focus()
+  }, [open])
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -155,12 +161,12 @@ export default function InlineChat({ productId, sellerName, productTitle, curren
           {/* Input */}
           <form onSubmit={handleSend} className="flex gap-2 px-3 py-3 border-t border-gray-100 bg-white">
             <input
+              ref={inputRef}
               type="text"
               value={text}
               onChange={e => setText(e.target.value)}
               placeholder="Is price negotiable?"
               className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500"
-              autoFocus
             />
             <button
               type="submit"

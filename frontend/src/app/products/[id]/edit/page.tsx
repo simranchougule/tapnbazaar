@@ -214,7 +214,7 @@ export default function EditProductPage() {
 
             {/* Image Upload */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Photos (max 5)</label>
+              <p className="block text-sm font-medium text-gray-700 mb-2">Photos (max 5)</p>
               {images.length > 0 && (
                 <div className="grid grid-cols-5 gap-2 mb-3">
                   {images.map((url, index) => (
@@ -251,7 +251,7 @@ export default function EditProductPage() {
 
             {/* Listing Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Listing Type</label>
+              <p className="block text-sm font-medium text-gray-700 mb-2">Listing Type</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { value: 'local',    label: 'Local Sale',  desc: 'You own and ship the item' },
@@ -277,19 +277,19 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
-              <input type="text" name="title" value={formData.title} onChange={handleChange}
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
+              <input id="title" type="text" name="title" value={formData.title} onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.) <span className="text-red-500">*</span></label>
-              <input type="number" name="price" value={formData.price} onChange={handleChange}
+              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.) <span className="text-red-500">*</span></label>
+              <input id="price" type="number" name="price" value={formData.price} onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Condition <span className="text-red-500">*</span></label>
+              <p className="block text-sm font-medium text-gray-700 mb-2">Condition <span className="text-red-500">*</span></p>
               <div className="grid grid-cols-5 gap-2">
                 {CONDITIONS.map((cond) => (
                   <button key={cond.value} type="button"
@@ -302,7 +302,7 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <p className="block text-sm font-medium text-gray-700 mb-2">Status</p>
               <div className="grid grid-cols-3 gap-2">
                 {STATUSES.map((s) => (
                   <button key={s.value} type="button"
@@ -315,20 +315,20 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-red-500">*</span></label>
-              <textarea name="description" value={formData.description} onChange={handleChange}
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-red-500">*</span></label>
+              <textarea id="description" name="description" value={formData.description} onChange={handleChange}
                 rows={5} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 resize-none" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-500">*</span></label>
-                <input type="text" name="city" value={formData.city} onChange={handleChange}
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-500">*</span></label>
+                <input id="city" type="text" name="city" value={formData.city} onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">State <span className="text-red-500">*</span></label>
-                <select name="state" value={formData.state}
+                <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">State <span className="text-red-500">*</span></label>
+                <select id="state" name="state" value={formData.state}
                   onChange={e => setFormData({ ...formData, state: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 bg-white">
                   <option value="">Select state</option>
@@ -347,10 +347,10 @@ export default function EditProductPage() {
 
                 {/* Supplier cost */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="supplier_cost" className="block text-sm font-medium text-gray-700 mb-1">
                     Supplier Cost (Rs.) <span className="text-red-500">*</span>
                   </label>
-                  <input type="number" name="supplier_cost" value={formData.supplier_cost} onChange={handleChange}
+                  <input id="supplier_cost" type="number" name="supplier_cost" value={formData.supplier_cost} onChange={handleChange}
                     placeholder="e.g. 500" min="0"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500" />
                   <p className="text-xs text-gray-400 mt-1">What you pay the supplier — never shown to buyers.</p>
@@ -386,8 +386,8 @@ export default function EditProductPage() {
 
                 {/* Supplier info */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Supplier Info</label>
-                  <textarea name="supplier_info" value={formData.supplier_info} onChange={handleChange}
+                  <label htmlFor="supplier_info" className="block text-sm font-medium text-gray-700 mb-1">Supplier Info</label>
+                  <textarea id="supplier_info" name="supplier_info" value={formData.supplier_info} onChange={handleChange}
                     placeholder="e.g. Meesho product link, IndiaMART supplier name, WhatsApp number..."
                     rows={3} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 resize-none" />
                   <p className="text-xs text-gray-400 mt-1">This is only visible to you — buyers will never see this.</p>
@@ -400,8 +400,8 @@ export default function EditProductPage() {
                   </p>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Delivery</label>
-                    <select name="delivery_days" value={formData.delivery_days} onChange={handleChange}
+                    <label htmlFor="delivery_days" className="block text-xs font-medium text-gray-600 mb-1">Estimated Delivery</label>
+                    <select id="delivery_days" name="delivery_days" value={formData.delivery_days} onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 bg-white text-sm">
                       <option value="1-2 days">1–2 days (Express)</option>
                       <option value="3-5 days">3–5 days (Fast)</option>
@@ -413,8 +413,8 @@ export default function EditProductPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Return Policy</label>
-                    <select name="return_policy" value={formData.return_policy} onChange={handleChange}
+                    <label htmlFor="return_policy" className="block text-xs font-medium text-gray-600 mb-1">Return Policy</label>
+                    <select id="return_policy" name="return_policy" value={formData.return_policy} onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 bg-white text-sm">
                       <option value="No returns">No returns</option>
                       <option value="Contact seller within 7 days">Contact seller within 7 days</option>
@@ -425,8 +425,8 @@ export default function EditProductPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Shipping Note <span className="text-gray-400">(optional)</span></label>
-                    <input type="text" name="shipping_note" value={formData.shipping_note} onChange={handleChange}
+                    <label htmlFor="shipping_note" className="block text-xs font-medium text-gray-600 mb-1">Shipping Note <span className="text-gray-400">(optional)</span></label>
+                    <input id="shipping_note" type="text" name="shipping_note" value={formData.shipping_note} onChange={handleChange}
                       placeholder="e.g. Free shipping across India, Shipping charges extra..."
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 text-sm" />
                   </div>

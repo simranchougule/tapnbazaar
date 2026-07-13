@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -77,6 +77,7 @@ export default function ProductDetailClient({
   const [soldLoading, setSoldLoading] = useState(false)
   const [showShare, setShowShare]     = useState(false)
   const [showOffer, setShowOffer]     = useState(false)
+  const offerInputRef = useRef<HTMLInputElement>(null)
   const [offerPrice, setOfferPrice]   = useState('')
   const [copied, setCopied]           = useState(false)
   const [showReport, setShowReport]   = useState(false)
@@ -88,6 +89,7 @@ export default function ProductDetailClient({
     if (!initialProduct) { fetchProduct() }
   }, [])
   useEffect(() => { if (isLoggedIn) fetchFavoriteStatus() }, [isLoggedIn, id])
+  useEffect(() => { if (showOffer) offerInputRef.current?.focus() }, [showOffer])
 
   const fetchProduct = async () => {
     try {
@@ -208,8 +210,11 @@ export default function ProductDetailClient({
           {/* Images */}
           <div>
             <div className="relative">
-              <div
-                className="bg-gray-100 rounded-2xl overflow-hidden h-80 flex items-center justify-center cursor-zoom-in relative"
+              <button
+                type="button"
+                aria-label="View full-size image"
+                disabled={product.images.length === 0}
+                className="bg-gray-100 rounded-2xl overflow-hidden h-80 w-full flex items-center justify-center cursor-zoom-in relative disabled:cursor-default"
                 onClick={() => product.images.length > 0 && setLightbox(true)}
               >
                 {product.images.length > 0 ? (
@@ -217,7 +222,7 @@ export default function ProductDetailClient({
                 ) : (
                   <Tag className="w-16 h-16 text-gray-300" />
                 )}
-              </div>
+              </button>
 
               {/* Floating heart + share */}
               <div className="absolute top-3 right-3 flex flex-col gap-2">
@@ -364,7 +369,7 @@ export default function ProductDetailClient({
               <User className="w-4 h-4 text-gray-300" />
             </Link>
 
-           {/* Buyer CTAs */}
+            {/* Buyer CTAs */}
             {!isOwner && product.status !== 'SOLD' && (
               <div className="flex flex-col gap-2">
                 <p className="text-xs text-gray-400 text-center">
@@ -437,8 +442,14 @@ export default function ProductDetailClient({
 
       {/* Make Offer Modal */}
       {showOffer && product && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end sm:items-center justify-center p-4 pb-20 sm:pb-4" onClick={() => setShowOffer(false)}>
-          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end sm:items-center justify-center p-4 pb-20 sm:pb-4">
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setShowOffer(false)}
+            className="absolute inset-0 w-full h-full cursor-default z-0"
+          />
+          <div className="relative z-10 bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="font-bold text-gray-900 text-lg">Make an Offer</h3>
@@ -450,16 +461,17 @@ export default function ProductDetailClient({
             </div>
 
             <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-600 mb-2">Your Offer Price (Rs.)</label>
+              <label htmlFor="offerPrice" className="block text-xs font-medium text-gray-600 mb-2">Your Offer Price (Rs.)</label>
               <div className="flex items-center gap-2 border-2 border-orange-300 rounded-2xl px-4 py-3 focus-within:border-orange-500">
                 <span className="text-gray-400 font-medium">Rs.</span>
                 <input
+                  id="offerPrice"
+                  ref={offerInputRef}
                   type="number"
                   value={offerPrice}
                   onChange={e => setOfferPrice(e.target.value)}
                   placeholder={String(Math.round(product.price * 0.9))}
                   className="flex-1 focus:outline-none text-gray-900 font-semibold text-lg"
-                  autoFocus
                 />
               </div>
               {offerPrice && Number(offerPrice) < product.price && (
@@ -494,8 +506,14 @@ export default function ProductDetailClient({
 
       {/* Share Modal */}
       {showShare && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowShare(false)}>
-          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setShowShare(false)}
+            className="absolute inset-0 w-full h-full cursor-default z-0"
+          />
+          <div className="relative z-10 bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="font-bold text-gray-900 text-lg">Share Listing</h3>

@@ -264,8 +264,14 @@ export default function SellerProfilePage() {
 
       {/* Leave a Review Modal */}
       {showReviewModal && reviewProduct && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowReviewModal(false)}>
-          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setShowReviewModal(false)}
+            className="absolute inset-0 w-full h-full cursor-default z-0"
+          />
+          <div className="relative z-10 bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="font-bold text-gray-900 text-lg">{alreadyReviewed ? 'Edit Review' : 'Leave a Review'}</h3>
@@ -288,8 +294,9 @@ export default function SellerProfilePage() {
             </div>
 
             <div className="mb-5">
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Comment (optional)</label>
+              <label htmlFor="reviewComment" className="text-xs font-medium text-gray-600 mb-1 block">Comment (optional)</label>
               <textarea
+                id="reviewComment"
                 value={reviewComment}
                 onChange={e => setReviewComment(e.target.value)}
                 placeholder="Share your experience with this seller..."

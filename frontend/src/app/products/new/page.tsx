@@ -313,15 +313,15 @@ export default function CreateProductPage() {
               <SectionHeader icon={Tag} title="Item Details" />
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
-                  <input type="text" name="title" value={formData.title} onChange={handleChange}
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
+                  <input id="title" type="text" name="title" value={formData.title} onChange={handleChange}
                     placeholder="e.g. iPhone 13 Pro Max 256GB"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
-                  <select name="categoryId" value={formData.categoryId} onChange={handleChange}
+                  <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
+                  <select id="categoryId" name="categoryId" value={formData.categoryId} onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white">
                     <option value="">Select a category</option>
                     {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>)}
@@ -329,7 +329,7 @@ export default function CreateProductPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
                     Price (Rs.) <span className="text-red-500">*</span>
                     <span className="relative group inline-block ml-1.5 cursor-pointer">
                       <span className="text-gray-400 hover:text-orange-500 transition-colors text-xs border border-gray-300 rounded-full px-1.5 py-0.5">ⓘ</span>
@@ -339,13 +339,13 @@ export default function CreateProductPage() {
                       </span>
                     </span>
                   </label>
-                  <input type="number" name="price" value={formData.price} onChange={handleChange}
+                  <input id="price" type="number" name="price" value={formData.price} onChange={handleChange}
                     placeholder="e.g. 15000" min="0"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Condition <span className="text-red-500">*</span></label>
+                  <p className="block text-sm font-medium text-gray-700 mb-2">Condition <span className="text-red-500">*</span></p>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {CONDITIONS.map(cond => (
                       <button key={cond.value} type="button"
@@ -382,7 +382,7 @@ export default function CreateProductPage() {
 
                   {/* Supplier cost */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="supplier_cost" className="block text-sm font-medium text-gray-700 mb-1">
                       Supplier Cost (Rs.) <span className="text-red-500">*</span>
                       <span className="relative group inline-block ml-1.5 cursor-pointer">
                         <span className="text-gray-400 hover:text-orange-500 transition-colors text-xs border border-gray-300 rounded-full px-1.5 py-0.5">ⓘ</span>
@@ -393,6 +393,7 @@ export default function CreateProductPage() {
                       </span>
                     </label>
                     <input
+                      id="supplier_cost"
                       type="number"
                       name="supplier_cost"
                       value={formData.supplier_cost}
@@ -443,8 +444,9 @@ export default function CreateProductPage() {
 
                   {/* Supplier info */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Supplier Info</label>
+                    <label htmlFor="supplier_info" className="block text-sm font-medium text-gray-700 mb-1">Supplier Info</label>
                     <textarea
+                      id="supplier_info"
                       name="supplier_info"
                       value={formData.supplier_info}
                       onChange={handleChange}
@@ -460,8 +462,9 @@ export default function CreateProductPage() {
                     <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">🚚 Shipping Details <span className="text-xs font-normal text-gray-400">(shown to buyers)</span></p>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Estimated Delivery</label>
+                      <label htmlFor="delivery_days" className="block text-xs font-medium text-gray-600 mb-1">Estimated Delivery</label>
                       <select
+                        id="delivery_days"
                         name="delivery_days"
                         value={formData.delivery_days}
                         onChange={handleChange}
@@ -477,8 +480,9 @@ export default function CreateProductPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Return Policy</label>
+                      <label htmlFor="return_policy" className="block text-xs font-medium text-gray-600 mb-1">Return Policy</label>
                       <select
+                        id="return_policy"
                         name="return_policy"
                         value={formData.return_policy}
                         onChange={handleChange}
@@ -493,8 +497,9 @@ export default function CreateProductPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Shipping Note <span className="text-gray-400">(optional)</span></label>
+                      <label htmlFor="shipping_note" className="block text-xs font-medium text-gray-600 mb-1">Shipping Note <span className="text-gray-400">(optional)</span></label>
                       <input
+                        id="shipping_note"
                         type="text"
                         name="shipping_note"
                         value={formData.shipping_note}
@@ -559,13 +564,13 @@ export default function CreateProductPage() {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">City <span className="text-red-500">*</span></label>
-                    <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Pune"
+                    <label htmlFor="city" className="block text-xs font-medium text-gray-600 mb-1">City <span className="text-red-500">*</span></label>
+                    <input id="city" type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Pune"
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">State <span className="text-red-500">*</span></label>
-                    <select name="state" value={formData.state} onChange={handleChange}
+                    <label htmlFor="state" className="block text-xs font-medium text-gray-600 mb-1">State <span className="text-red-500">*</span></label>
+                    <select id="state" name="state" value={formData.state} onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white">
                       <option value="">Select state</option>
                       {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -575,13 +580,13 @@ export default function CreateProductPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Area / Locality</label>
-                    <input type="text" name="area" value={formData.area} onChange={handleChange} placeholder="Baner, Koregaon Park..."
+                    <label htmlFor="area" className="block text-xs font-medium text-gray-600 mb-1">Area / Locality</label>
+                    <input id="area" type="text" name="area" value={formData.area} onChange={handleChange} placeholder="Baner, Koregaon Park..."
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Pincode</label>
-                    <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} placeholder="411045"
+                    <label htmlFor="pincode" className="block text-xs font-medium text-gray-600 mb-1">Pincode</label>
+                    <input id="pincode" type="text" name="pincode" value={formData.pincode} onChange={handleChange} placeholder="411045"
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" />
                   </div>
                 </div>

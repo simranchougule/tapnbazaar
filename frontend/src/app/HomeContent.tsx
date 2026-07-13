@@ -690,8 +690,10 @@ function HomeContent({
 
         {showFilters && (
           <>
-            <div
-              className="fixed inset-0 bg-black/40 z-40 sm:hidden"
+            <button
+              type="button"
+              aria-label="Close filters"
+              className="fixed inset-0 bg-black/40 z-40 sm:hidden cursor-default"
               onClick={() => setShowFilters(false)}
             />
             <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl px-5 pt-3 pb-28 shadow-xl sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:z-auto sm:rounded-2xl sm:p-4 sm:mb-4 sm:shadow-sm sm:border sm:border-gray-100">
@@ -704,8 +706,9 @@ function HomeContent({
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Sort By</label>
+                  <label htmlFor="sortBy" className="block text-xs font-medium text-gray-600 mb-1">Sort By</label>
                   <select
+                    id="sortBy"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white"
@@ -716,8 +719,9 @@ function HomeContent({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Condition</label>
+                  <label htmlFor="condition" className="block text-xs font-medium text-gray-600 mb-1">Condition</label>
                   <select
+                    id="condition"
                     value={condition}
                     onChange={(e) => setCondition(e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white"
@@ -731,8 +735,9 @@ function HomeContent({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Min Price (Rs.)</label>
+                  <label htmlFor="minPrice" className="block text-xs font-medium text-gray-600 mb-1">Min Price (Rs.)</label>
                   <input
+                    id="minPrice"
                     type="number"
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
@@ -741,8 +746,9 @@ function HomeContent({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Max Price (Rs.)</label>
+                  <label htmlFor="maxPrice" className="block text-xs font-medium text-gray-600 mb-1">Max Price (Rs.)</label>
                   <input
+                    id="maxPrice"
                     type="number"
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}

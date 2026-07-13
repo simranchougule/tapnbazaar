@@ -22,6 +22,11 @@ export default function PhoneVerifyModal({ onVerified, onClose }: Props) {
   // Auto-send OTP immediately when modal opens and phone is already known
   // useRef prevents double-fire in React StrictMode
   const hasSentRef = useRef(false)
+  const otpInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (step === 'otp') otpInputRef.current?.focus()
+  }, [step])
   useEffect(() => {
     if (user?.phone && !hasSentRef.current) {
       hasSentRef.current = true
@@ -81,8 +86,14 @@ export default function PhoneVerifyModal({ onVerified, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label="Close dialog"
+        onClick={onClose}
+        className="absolute inset-0 w-full h-full cursor-default z-0"
+      />
+      <div className="relative z-10 bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
@@ -132,13 +143,13 @@ export default function PhoneVerifyModal({ onVerified, onClose }: Props) {
             <p className="text-sm font-semibold text-gray-800 mb-4">+91 {phone}</p>
 
             <input
+              ref={otpInputRef}
               type="text"
               maxLength={6}
               value={otp}
               onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
               placeholder="_ _ _ _ _ _"
               aria-label="One-time password"
-              autoFocus
               className="w-full text-center text-2xl font-bold tracking-[12px] border-2 border-gray-200 rounded-xl py-3 focus:outline-none focus:border-orange-400 mb-4"
             />
 

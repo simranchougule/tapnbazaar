@@ -51,8 +51,15 @@ export default function ImageLightbox({ images, index, onClose, onChange }: Prop
       aria-modal="true"
       aria-label={`Image viewer — ${index + 1} of ${images.length}`}
       className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center"
-      onClick={onClose}
     >
+      {/* Backdrop — real button so it's keyboard accessible, sits behind everything else */}
+      <button
+        type="button"
+        aria-label="Close image viewer"
+        onClick={onClose}
+        className="absolute inset-0 w-full h-full cursor-default z-0"
+      />
+
       {/* Screen-reader live counter — announced whenever the image changes */}
       <div aria-live="polite" className="sr-only">
         Image {index + 1} of {images.length}
@@ -72,8 +79,8 @@ export default function ImageLightbox({ images, index, onClose, onChange }: Prop
       {images.length > 1 && (
         <button
           aria-label="Previous image"
-          className="absolute left-4 text-white hover:text-gray-300 p-2 bg-black bg-opacity-40 rounded-full"
-          onClick={e => { e.stopPropagation(); onChange((index - 1 + images.length) % images.length) }}
+          className="absolute left-4 text-white hover:text-gray-300 p-2 bg-black bg-opacity-40 rounded-full z-10"
+          onClick={() => onChange((index - 1 + images.length) % images.length)}
         >
           <ChevronLeft className="w-6 h-6" aria-hidden="true" />
         </button>
@@ -82,17 +89,16 @@ export default function ImageLightbox({ images, index, onClose, onChange }: Prop
       {/* Image */}
       <img
         src={images[index]}
-        alt={`Product image ${index + 1} of ${images.length}`}
-        className="max-h-[90vh] max-w-[90vw] object-contain rounded-xl"
-        onClick={e => e.stopPropagation()}
+        alt={`Product ${index + 1} of ${images.length}`}
+        className="relative z-10 max-h-[90vh] max-w-[90vw] object-contain rounded-xl"
       />
 
       {/* Next */}
       {images.length > 1 && (
         <button
           aria-label="Next image"
-          className="absolute right-4 text-white hover:text-gray-300 p-2 bg-black bg-opacity-40 rounded-full"
-          onClick={e => { e.stopPropagation(); onChange((index + 1) % images.length) }}
+          className="absolute right-4 text-white hover:text-gray-300 p-2 bg-black bg-opacity-40 rounded-full z-10"
+          onClick={() => onChange((index + 1) % images.length)}
         >
           <ChevronRight className="w-6 h-6" aria-hidden="true" />
         </button>
@@ -100,14 +106,14 @@ export default function ImageLightbox({ images, index, onClose, onChange }: Prop
 
       {/* Dot navigation */}
       {images.length > 1 && (
-        <div className="absolute bottom-6 flex gap-2" role="tablist" aria-label="Image thumbnails">
+        <div className="absolute bottom-6 flex gap-2 z-10" role="tablist" aria-label="Image thumbnails">
           {images.map((_, i) => (
             <button
               key={i}
               role="tab"
               aria-selected={i === index}
               aria-label={`Go to image ${i + 1}`}
-              onClick={e => { e.stopPropagation(); onChange(i) }}
+              onClick={() => onChange(i)}
               className={"w-2 h-2 rounded-full transition-colors " + (i === index ? 'bg-white' : 'bg-gray-500')}
             />
           ))}

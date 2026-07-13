@@ -81,8 +81,9 @@ export default function HelpPage() {
         return (
           <div className="space-y-3 max-w-sm">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Your Email</label>
+              <label htmlFor="contactEmail" className="block text-xs font-medium text-gray-600 mb-1">Your Email</label>
               <input
+                id="contactEmail"
                 value={contactForm.email}
                 onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="your@email.com"
@@ -90,8 +91,9 @@ export default function HelpPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
+              <label htmlFor="contactSubject" className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
               <input
+                id="contactSubject"
                 value={contactForm.subject}
                 onChange={e => setContactForm(f => ({ ...f, subject: e.target.value }))}
                 placeholder="What's this about?"
@@ -99,8 +101,9 @@ export default function HelpPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Message</label>
+              <label htmlFor="contactMessage" className="block text-xs font-medium text-gray-600 mb-1">Message</label>
               <textarea
+                id="contactMessage"
                 value={contactForm.message}
                 onChange={e => setContactForm(f => ({ ...f, message: e.target.value }))}
                 rows={4}
@@ -119,8 +122,9 @@ export default function HelpPage() {
         return (
           <div className="space-y-3 max-w-sm">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Problem Type</label>
+              <label htmlFor="reportType" className="block text-xs font-medium text-gray-600 mb-1">Problem Type</label>
               <select
+                id="reportType"
                 value={reportForm.type}
                 onChange={e => setReportForm(f => ({ ...f, type: e.target.value }))}
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white"
@@ -134,8 +138,9 @@ export default function HelpPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Your Email (optional)</label>
+              <label htmlFor="reportEmail" className="block text-xs font-medium text-gray-600 mb-1">Your Email (optional)</label>
               <input
+                id="reportEmail"
                 value={reportForm.email}
                 onChange={e => setReportForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="For follow-up"
@@ -143,8 +148,9 @@ export default function HelpPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
+              <label htmlFor="reportDescription" className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
               <textarea
+                id="reportDescription"
                 value={reportForm.description}
                 onChange={e => setReportForm(f => ({ ...f, description: e.target.value }))}
                 rows={4}

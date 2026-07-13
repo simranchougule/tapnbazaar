@@ -80,11 +80,12 @@ export default function ResetPasswordPage() {
 
             {/* New Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 New Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
+                  id="newPassword"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -131,11 +132,12 @@ export default function ResetPasswordPage() {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 Confirm New Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
+                  id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}

@@ -220,23 +220,23 @@ export default function ProfilePage() {
                     <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Full Name *</label>
-                    <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                    <label htmlFor="profileName" className="block text-xs font-medium text-gray-600 mb-1">Full Name *</label>
+                    <input id="profileName" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-orange-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
-                    <input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
+                    <label htmlFor="profilePhone" className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+                    <input id="profilePhone" value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-orange-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">City</label>
-                    <input value={editForm.city} onChange={e => setEditForm(f => ({ ...f, city: e.target.value }))}
+                    <label htmlFor="profileCity" className="block text-xs font-medium text-gray-600 mb-1">City</label>
+                    <input id="profileCity" value={editForm.city} onChange={e => setEditForm(f => ({ ...f, city: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-orange-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">State</label>
-                    <select value={editForm.state} onChange={e => setEditForm(f => ({ ...f, state: e.target.value }))}
+                    <label htmlFor="profileState" className="block text-xs font-medium text-gray-600 mb-1">State</label>
+                    <select id="profileState" value={editForm.state} onChange={e => setEditForm(f => ({ ...f, state: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-orange-500 bg-white">
                       <option value="">Select state</option>
                       {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}

@@ -74,19 +74,20 @@ export default function Modal({ onClose, title, children, panelClass = 'max-w-sm
   }
 
   return (
-    // Backdrop — aria-hidden because the dialog panel carries all semantics
-    <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      aria-hidden="true"
-      onClick={onClose}
-    >
+    // Backdrop — a real button so it's keyboard accessible too; visually identical
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label="Close dialog"
+        onClick={onClose}
+        className="absolute inset-0 w-full h-full cursor-default z-0"
+      />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`bg-white rounded-2xl w-full ${panelClass} p-6 shadow-2xl`}
-        onClick={e => e.stopPropagation()}
+        className={`relative z-10 bg-white rounded-2xl w-full ${panelClass} p-6 shadow-2xl`}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
