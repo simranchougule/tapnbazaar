@@ -259,7 +259,7 @@ export default function SettingsPage() {
           <div className="text-center py-8">
             <Moon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-600 font-semibold">Dark Mode</p>
-            <p className="text-gray-400 text-sm mt-1">Coming soon — we're working on it!</p>
+            <p className="text-gray-400 text-sm mt-1">Coming soon — we&apos;re working on it!</p>
           </div>
         )
 
