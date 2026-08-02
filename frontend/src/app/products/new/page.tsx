@@ -98,7 +98,7 @@ export default function CreateProductPage() {
       async (position) => {
         const { latitude, longitude } = position.coords
         try {
-          const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`)
+          const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`)
           const data = await res.json()
           const addr = data.address || {}
           const city = addr.city || addr.town || addr.village || addr.county || ''
