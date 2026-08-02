@@ -17,10 +17,11 @@ const api = axios.create({
 // It automatically adds the token from localStorage
 // So we don't have to manually add it every time
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
+  try {
+    const stored = localStorage.getItem('auth')
+    const token  = stored ? JSON.parse(stored)?.state?.token : null
+    if (token) config.headers.Authorization = `Bearer ${token}`
+  } catch {}
   return config
 })
 
@@ -35,8 +36,7 @@ api.interceptors.response.use(
   (error) => {
     const isLoginRequest = error.config?.url?.includes('/auth/login')
     if (error.response?.status === 401 && !isLoginRequest) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      localStorage.removeItem('auth')
       window.location.href = '/login'
     }
     return Promise.reject(error)

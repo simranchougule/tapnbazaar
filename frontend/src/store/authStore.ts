@@ -11,6 +11,7 @@
 // none of the admin/verification flags at all.
 
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { User } from '@/types'
 
 interface AuthStore {
@@ -22,35 +23,23 @@ interface AuthStore {
   loadFromStorage: () => void
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
-  user:      null,
-  token:     null,
-  isLoggedIn: false,
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      user:        null,
+      token:       null,
+      isLoggedIn:  false,
 
-  // Called when user logs in or registers
-  setAuth: (user, token) => {
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(user))
-    set({ user, token, isLoggedIn: true })
-  },
+      setAuth: (user, token) => set({ user, token, isLoggedIn: true }),
 
-  // Called when user logs out
-  logout: () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    set({ user: null, token: null, isLoggedIn: false })
-  },
+      logout: () => set({ user: null, token: null, isLoggedIn: false }),
 
-  // Called when app loads to restore login state
-  loadFromStorage: () => {
-    const token   = localStorage.getItem('token')
-    const userStr = localStorage.getItem('user')
-    if (token && userStr) {
-      set({
-        token,
-        user:      JSON.parse(userStr),
-        isLoggedIn: true,
-      })
+      // kept for compatibility — persist handles hydration automatically
+      loadFromStorage: () => {},
+    }),
+    {
+      name: 'auth',
+      partialize: (state) => ({ user: state.user, token: state.token, isLoggedIn: state.isLoggedIn }),
     }
-  },
-}))
+  )
+)
