@@ -4,11 +4,12 @@ import { AuthRequest } from '../middleware/auth.middleware'
 import { sendNotification } from '../services/notificationService'
 import { withCache } from '../lib/cache'
 
+async function writeLog(adminId: string, action: string, targetId: string, targetType: string, detail?: string) {
+  await prisma.adminLog.create({ data: { adminId, action, targetId, targetType, detail } })
+}
+
 export const getStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    // Dashboard counts don't need to be second-by-second accurate — a
-    // short cache avoids five COUNT queries every time an admin opens
-    // or refreshes the dashboard.
     const stats = await withCache('admin:stats', 60_000, async () => {
       const [totalUsers, totalProducts, totalMessages, activeProducts, soldProducts] = await Promise.all([
         prisma.user.count(),
@@ -46,7 +47,9 @@ export const getAllProducts = async (req: AuthRequest, res: Response): Promise<v
 
 export const deleteProductAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    await prisma.product.delete({ where: { id: req.params.id as string } })
+    const productId = req.params.id as string
+    await prisma.product.delete({ where: { id: productId } })
+    await writeLog(req.user!.userId, 'DELETE_PRODUCT', productId, 'product')
     res.status(200).json({ success: true, message: 'Product deleted' })
   } catch { res.status(500).json({ success: false, message: 'Something went wrong.' }) }
 }
@@ -76,6 +79,7 @@ export const banUser = async (req: AuthRequest, res: Response): Promise<void> =>
       data: { isBanned: banned ?? true },
       select: { id: true, name: true, isBanned: true },
     })
+    await writeLog(req.user!.userId, user.isBanned ? 'BAN_USER' : 'UNBAN_USER', targetId, 'user', user.name)
     res.status(200).json({ success: true, user })
   } catch { res.status(500).json({ success: false, message: 'Something went wrong.' }) }
 }
@@ -100,6 +104,7 @@ export const markTrusted = async (req: AuthRequest, res: Response): Promise<void
       data: { isTrusted: trusted ?? true },
       select: { id: true, name: true, isTrusted: true },
     })
+    await writeLog(req.user!.userId, user.isTrusted ? 'MARK_TRUSTED' : 'UNMARK_TRUSTED', targetId, 'user', user.name)
     res.status(200).json({ success: true, user })
   } catch { res.status(500).json({ success: false, message: 'Something went wrong.' }) }
 }
@@ -115,5 +120,15 @@ export const getReports = async (req: AuthRequest, res: Response): Promise<void>
       take: 100,
     })
     res.status(200).json({ success: true, reports })
+  } catch { res.status(500).json({ success: false, message: 'Something went wrong.' }) }
+}
+
+export const getAuditLog = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const logs = await prisma.adminLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    })
+    res.status(200).json({ success: true, logs })
   } catch { res.status(500).json({ success: false, message: 'Something went wrong.' }) }
 }
