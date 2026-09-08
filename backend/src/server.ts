@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-import { initSentry, Sentry } from './lib/sentry'
+import { initSentry, sentryErrorHandler } from './lib/sentry'
 const envResult = dotenv.config()
 if (envResult.error) {
   console.error('⚠️  Failed to load .env file:', envResult.error.message)
@@ -47,7 +47,6 @@ const io         = new Server(httpServer, {
 // Give the notification service access to io
 setIo(io)
 
-app.use(Sentry.Handlers.requestHandler())
 app.use(helmet())
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }))
 app.use(express.json({ limit: '10mb' }))
@@ -88,7 +87,7 @@ app.use((req, res) => {
 })
 
 // Global error handler — catches any error passed via next(err) or thrown in async routes
-app.use(Sentry.Handlers.errorHandler())
+app.use(sentryErrorHandler())
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err)
   const status  = err.status || err.statusCode || 500

@@ -16,4 +16,10 @@ export function captureException(error: unknown, context?: Record<string, unknow
   console.error(error)
 }
 
-export { Sentry }
+// v8+ no longer uses Handlers middleware — auto-instrumentation handles it
+export function sentryErrorHandler() {
+  return (err: any, req: any, res: any, next: any) => {
+    if (process.env.SENTRY_DSN) Sentry.captureException(err)
+    next(err)
+  }
+}
