@@ -6,6 +6,7 @@ export interface AuthRequest extends Request {
   user?: {
     userId: string
     email: string
+    tokenVersion: number
   }
 }
 
@@ -18,10 +19,7 @@ export const protect = async (
     const authHeader = req.headers.authorization
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({
-        success: false,
-        message: 'Not authorized. Please login first.',
-      })
+      res.status(401).json({ success: false, message: 'Not authorized. Please login first.' })
       return
     }
 
@@ -30,7 +28,7 @@ export const protect = async (
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { isBanned: true },
+      select: { isBanned: true, tokenVersion: true },
     })
 
     if (!user) {
@@ -43,13 +41,15 @@ export const protect = async (
       return
     }
 
+    if (decoded.tokenVersion !== user.tokenVersion) {
+      res.status(401).json({ success: false, message: 'Session expired. Please login again.' })
+      return
+    }
+
     req.user = decoded
     next()
   } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: 'Token is invalid or expired. Please login again.',
-    })
+    res.status(401).json({ success: false, message: 'Token is invalid or expired. Please login again.' })
   }
 }
 
@@ -67,9 +67,11 @@ export const optionalProtect = async (
       const decoded = verifyToken(token)
       const user    = await prisma.user.findUnique({
         where:  { id: decoded.userId },
-        select: { isBanned: true },
+        select: { isBanned: true, tokenVersion: true },
       })
-      if (user && !user.isBanned) req.user = decoded
+      if (user && !user.isBanned && decoded.tokenVersion === user.tokenVersion) {
+        req.user = decoded
+      }
     }
   } catch { /* invalid token — treat as guest */ }
   next()

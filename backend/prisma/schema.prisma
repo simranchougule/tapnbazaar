@@ -33,6 +33,7 @@ model User {
   phoneOtp             String?
   phoneOtpExpiry       DateTime?
   phoneOtpAttempts     Int       @default(0)
+  tokenVersion         Int       @default(0)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 

@@ -67,7 +67,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     sendEmailVerification(user.email, emailVerifyToken).catch(() => {})
 
-    const token = generateToken({ userId: user.id, email: user.email })
+    const token = generateToken({ userId: user.id, email: user.email, tokenVersion: user.tokenVersion })
 
     res.status(201).json({
       success: true,
@@ -102,7 +102,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(403).json({ success: false, message: 'This account has been suspended.' }); return
     }
 
-    const token = generateToken({ userId: user.id, email: user.email })
+    const token = generateToken({ userId: user.id, email: user.email, tokenVersion: user.tokenVersion })
 
     res.status(200).json({
       success: true,
@@ -338,7 +338,10 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
     if (!valid) { res.status(400).json({ success: false, message: 'Current password is incorrect' }); return }
 
     const hashed = await bcrypt.hash(newPassword, 12)
-    await prisma.user.update({ where: { id: user.id }, data: { password: hashed } })
+    await prisma.user.update({
+      where: { id: user.id },
+      data:  { password: hashed, tokenVersion: { increment: 1 } },
+    })
 
     res.status(200).json({ success: true, message: 'Password updated successfully!' })
   } catch {
