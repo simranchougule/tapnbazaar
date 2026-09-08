@@ -1,4 +1,5 @@
 import dotenv from 'dotenv'
+import { initSentry, Sentry } from './lib/sentry'
 const envResult = dotenv.config()
 if (envResult.error) {
   console.error('⚠️  Failed to load .env file:', envResult.error.message)
@@ -35,6 +36,8 @@ import locationRoutes     from './routes/location.routes'
 import reportRoutes       from './routes/report.routes'
 import reviewRoutes       from './routes/review.routes'
 
+initSentry()
+
 const app        = express()
 const httpServer = createServer(app)
 const io         = new Server(httpServer, {
@@ -44,18 +47,20 @@ const io         = new Server(httpServer, {
 // Give the notification service access to io
 setIo(io)
 
+app.use(Sentry.Handlers.requestHandler())
 app.use(helmet())
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }))
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
 // Rate limiting
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { success: false, message: 'Too many attempts, please try again after 15 minutes.' } })
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 50, message: { success: false, message: 'Too many attempts, please try again after 15 minutes.' } })
 const otpLimiter  = rateLimit({ windowMs: 10 * 60 * 1000, max: 10, message: { success: false, message: 'Too many OTP requests, please try again after 10 minutes.' } })
 const apiLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 })
 const viewLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, message: { success: false, message: 'Too many requests.' } })
 app.use('/api/auth/login',        authLimiter)
 app.use('/api/auth/register',     authLimiter)
+app.use('/api/auth/me',           apiLimiter)
 app.use('/api/auth/send-otp',     otpLimiter)
 app.use('/api/auth/verify-otp',   otpLimiter)
 app.use('/api/products/:id/view', viewLimiter)
@@ -83,6 +88,7 @@ app.use((req, res) => {
 })
 
 // Global error handler — catches any error passed via next(err) or thrown in async routes
+app.use(Sentry.Handlers.errorHandler())
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err)
   const status  = err.status || err.statusCode || 500
