@@ -65,7 +65,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       },
     })
 
-    sendEmailVerification(user.email, emailVerifyToken).catch(() => {})
+    sendEmailVerification(user.email, emailVerifyToken).catch((err) => {
+      console.error('Failed to send verification email:', err.message)
+    })
 
     const token = generateToken({ userId: user.id, email: user.email, tokenVersion: user.tokenVersion })
 
@@ -371,7 +373,9 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     })
 
     const { sendPasswordResetEmail } = await import('../services/emailService')
-    await sendPasswordResetEmail(user.email, resetToken).catch(() => {})
+    await sendPasswordResetEmail(user.email, resetToken).catch((err) => {
+      console.error('Failed to send password reset email:', err.message)
+    })
 
     res.status(200).json({ success: true, message: 'If an account exists with that email, a reset link has been sent.' })
   } catch (error) {
