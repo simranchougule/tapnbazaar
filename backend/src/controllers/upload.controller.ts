@@ -60,6 +60,12 @@ export const uploadMultipleImages = async (
       return
     }
 
+    const invalidFile = req.files.find(file => !validateMagicBytes(file))
+    if (invalidFile) {
+      res.status(400).json({ success: false, message: 'One or more files are invalid images' })
+      return
+    }
+
     const uploadPromises = req.files.map(async (file) => {
       const fileStr = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`
       const result  = await cloudinary.uploader.upload(fileStr, {

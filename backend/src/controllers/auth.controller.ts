@@ -8,6 +8,21 @@ import { sendEmailVerification, sendOtpEmail, sendSmsOtp } from '../services/ema
 
 const DISPOSABLE_DOMAINS = ['mailinator.com','guerrillamail.com','10minutemail.com','throwam.com','tempmail.com','yopmail.com','sharklasers.com','trashmail.com']
 
+function toPublicUser(user: {
+  id: string; name: string; email: string; phone: string | null;
+  avatar: string | null; city: string | null; state: string | null;
+  isVerified: boolean; isAdmin: boolean; phoneVerified: boolean;
+  emailVerified: boolean; createdAt?: Date;
+}) {
+  return {
+    id: user.id, name: user.name, email: user.email, phone: user.phone,
+    avatar: user.avatar, city: user.city, state: user.state,
+    isVerified: user.isVerified, isAdmin: user.isAdmin,
+    phoneVerified: user.phoneVerified, emailVerified: user.emailVerified,
+    ...(user.createdAt !== undefined && { createdAt: user.createdAt }),
+  }
+}
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password, phone, city, state } = req.body
@@ -58,13 +73,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       success: true,
       message: 'Account created successfully!',
       token,
-      user: {
-        id: user.id, name: user.name, email: user.email, phone: user.phone,
-        avatar: user.avatar, city: user.city, state: user.state,
-        isVerified: user.isVerified, isAdmin: user.isAdmin,
-        phoneVerified: user.phoneVerified, emailVerified: user.emailVerified,
-        createdAt: user.createdAt,
-      },
+      user: toPublicUser(user),
     })
   } catch (error) {
     console.error('Register error:', error)
@@ -99,13 +108,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       success: true,
       message: 'Logged in successfully!',
       token,
-      user: {
-        id: user.id, name: user.name, email: user.email, phone: user.phone,
-        avatar: user.avatar, city: user.city, state: user.state,
-        isVerified: user.isVerified, isAdmin: user.isAdmin,
-        phoneVerified: user.phoneVerified, emailVerified: user.emailVerified,
-        createdAt: user.createdAt,
-      },
+      user: toPublicUser(user),
     })
   } catch (error) {
     console.error('Login error:', error)
@@ -177,10 +180,7 @@ export const updateAvatar = async (req: AuthRequest, res: Response): Promise<voi
       where: { id: req.user!.userId },
       data:  { avatar: result.secure_url },
     })
-    res.status(200).json({
-      success: true,
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, avatar: user.avatar, city: user.city, state: user.state, isVerified: user.isVerified },
-    })
+    res.status(200).json({ success: true, user: toPublicUser(user) })
   } catch (error) {
     console.error('Avatar upload error:', error)
     res.status(500).json({ success: false, message: 'Avatar upload failed.' })
@@ -203,7 +203,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     res.status(200).json({
       success: true,
       message: 'Profile updated!',
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, avatar: user.avatar, city: user.city, state: user.state, isVerified: user.isVerified },
+      user: toPublicUser(user),
     })
   } catch (error) {
     res.status(500).json({ success: false, message: 'Something went wrong.' })
@@ -252,7 +252,7 @@ export const sendPhoneOtp = async (req: AuthRequest, res: Response): Promise<voi
 
     const hashedOtp = await bcrypt.hash(otp, 10)
 
-await prisma.user.update({
+    await prisma.user.update({
       where: { id: req.user!.userId },
       data:  { phone, phoneOtp: hashedOtp, phoneOtpExpiry: expiry, phoneOtpAttempts: 0 },
     })
@@ -292,7 +292,7 @@ export const verifyPhoneOtp = async (req: AuthRequest, res: Response): Promise<v
     const user = await prisma.user.findUnique({ where: { id: req.user!.userId } })
     if (!user) { res.status(404).json({ success: false, message: 'User not found' }); return }
 
-if (!user.phoneOtp || !user.phoneOtpExpiry) {
+    if (!user.phoneOtp || !user.phoneOtpExpiry) {
       res.status(400).json({ success: false, message: 'No OTP found. Please request a new one.' }); return
     }
     if (new Date() > user.phoneOtpExpiry) {
@@ -318,12 +318,7 @@ if (!user.phoneOtp || !user.phoneOtpExpiry) {
     res.status(200).json({
       success: true,
       message: 'Phone number verified!',
-      user: {
-        id: updated.id, name: updated.name, email: updated.email, phone: updated.phone,
-        avatar: updated.avatar, city: updated.city, state: updated.state,
-        isVerified: updated.isVerified, isAdmin: updated.isAdmin,
-        phoneVerified: updated.phoneVerified, emailVerified: updated.emailVerified,
-      },
+      user: toPublicUser(updated),
     })
   } catch {
     res.status(500).json({ success: false, message: 'Something went wrong.' })
